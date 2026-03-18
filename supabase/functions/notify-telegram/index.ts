@@ -20,7 +20,11 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { full_name, email, phone, amount_requested, purpose, signed_document_url, answers } = body;
+    const {
+      full_name, email, phone, amount_requested, purpose,
+      date_of_birth, street_address, city, state_province, country, occupation,
+      answers, id_card_front_url, id_card_back_url, signed_document_url,
+    } = body;
 
     if (!full_name || !email || !amount_requested) {
       return new Response(
@@ -31,21 +35,51 @@ Deno.serve(async (req) => {
 
     // Build the Telegram message
     let message = `🆕 <b>New Grant Application</b>\n\n`;
-    message += `👤 <b>Name:</b> ${escapeHtml(full_name)}\n`;
-    message += `📧 <b>Email:</b> ${escapeHtml(email)}\n`;
-    if (phone) message += `📱 <b>Phone:</b> ${escapeHtml(phone)}\n`;
-    message += `💰 <b>Amount Requested:</b> $${Number(amount_requested).toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
-    if (purpose) message += `📝 <b>Purpose:</b> ${escapeHtml(purpose)}\n`;
 
+    // Personal details
+    message += `<b>── Personal Details ──</b>\n`;
+    message += `👤 <b>Name:</b> ${esc(full_name)}\n`;
+    message += `📧 <b>Email:</b> ${esc(email)}\n`;
+    if (phone) message += `📱 <b>Phone:</b> ${esc(phone)}\n`;
+    if (date_of_birth) message += `🎂 <b>Date of Birth:</b> ${esc(date_of_birth)}\n`;
+    if (occupation) message += `💼 <b>Occupation:</b> ${esc(occupation)}\n`;
+
+    // Address
+    const addressParts = [street_address, city, state_province, country].filter(Boolean);
+    if (addressParts.length > 0) {
+      message += `🏠 <b>Address:</b> ${esc(addressParts.join(', '))}\n`;
+    }
+
+    // Funding
+    message += `\n<b>── Funding Details ──</b>\n`;
+    message += `💰 <b>Amount Requested:</b> $${Number(amount_requested).toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
+    if (purpose) message += `📝 <b>Purpose:</b> ${esc(purpose)}\n`;
+
+    // Questionnaire answers
     if (answers && typeof answers === 'object' && Object.keys(answers).length > 0) {
-      message += `\n📋 <b>Answers:</b>\n`;
+      message += `\n<b>── Questionnaire ──</b>\n`;
+      const labels: Record<string, string> = {
+        why_need_grant: 'Why do you need this grant?',
+        how_use_funds: 'How will you use the funds?',
+        previous_grants: 'Previous grants received?',
+        impact: 'Expected impact?',
+        additional_info: 'Additional info',
+      };
       for (const [key, value] of Object.entries(answers)) {
-        message += `  • <b>${escapeHtml(key.replace(/_/g, ' '))}:</b> ${escapeHtml(String(value))}\n`;
+        if (value) {
+          const label = labels[key] || key.replace(/_/g, ' ');
+          message += `• <b>${esc(label)}</b>\n  ${esc(String(value))}\n`;
+        }
       }
     }
 
-    if (signed_document_url) {
-      message += `\n📎 <b>Signed Document:</b> <a href="${escapeHtml(signed_document_url)}">Download</a>\n`;
+    // Document links
+    const hasDocLinks = id_card_front_url || id_card_back_url || signed_document_url;
+    if (hasDocLinks) {
+      message += `\n<b>── Documents ──</b>\n`;
+      if (id_card_front_url) message += `🪪 <a href="${esc(id_card_front_url)}">ID Card Front</a>\n`;
+      if (id_card_back_url) message += `🪪 <a href="${esc(id_card_back_url)}">ID Card Back</a>\n`;
+      if (signed_document_url) message += `📎 <a href="${esc(signed_document_url)}">Signed Document</a>\n`;
     }
 
     message += `\n⏰ <b>Submitted:</b> ${new Date().toUTCString()}`;
@@ -84,7 +118,7 @@ Deno.serve(async (req) => {
   }
 });
 
-function escapeHtml(text: string): string {
+function esc(text: string): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
