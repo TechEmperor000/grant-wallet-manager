@@ -37,6 +37,10 @@
     --input: 214 32% 91%;
     --ring: 217 91% 60%;
 
+    --gold: 43 96% 56%;
+    --gold-foreground: 0 0% 100%;
+    --gold-dark: 36 77% 42%;
+
     --radius: 0.375rem;
 
     --sidebar-background: 222 47% 11%;
