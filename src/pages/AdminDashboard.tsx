@@ -278,7 +278,7 @@ export default function AdminDashboard() {
             <DialogTitle>Application Details</DialogTitle>
           </DialogHeader>
           {selectedApp && (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto pr-2">
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Applicant Info</h3>
                 <div className="space-y-3">
@@ -296,6 +296,24 @@ export default function AdminDashboard() {
                       <p className="font-medium">{selectedApp.phone}</p>
                     </div>
                   )}
+                  {selectedApp.date_of_birth && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Date of Birth</Label>
+                      <p className="font-medium">{new Date(selectedApp.date_of_birth).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                    </div>
+                  )}
+                  {selectedApp.occupation && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Occupation</Label>
+                      <p className="font-medium">{selectedApp.occupation}</p>
+                    </div>
+                  )}
+                  {(selectedApp.street_address || selectedApp.city || selectedApp.country) && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Address</Label>
+                      <p className="font-medium">{[selectedApp.street_address, selectedApp.city, selectedApp.state_province, selectedApp.country].filter(Boolean).join(', ')}</p>
+                    </div>
+                  )}
                   <div>
                     <Label className="text-xs text-muted-foreground">Amount Requested</Label>
                     <p className="text-lg font-semibold">{formatCurrency(selectedApp.amount_requested)}</p>
@@ -311,16 +329,39 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Documents & Answers</h3>
-                {selectedApp.signed_document_url && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Signed Document</Label>
-                    <a href={selectedApp.signed_document_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline block">
-                      Download Document
-                    </a>
-                  </div>
-                )}
-                {selectedApp.answers && typeof selectedApp.answers === 'object' && (
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Documents</h3>
+                <div className="space-y-2">
+                  {selectedApp.id_card_front_url && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">ID Card — Front</Label>
+                      <a href={selectedApp.id_card_front_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline block text-sm">
+                        Download Front
+                      </a>
+                    </div>
+                  )}
+                  {selectedApp.id_card_back_url && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">ID Card — Back</Label>
+                      <a href={selectedApp.id_card_back_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline block text-sm">
+                        Download Back
+                      </a>
+                    </div>
+                  )}
+                  {selectedApp.signed_document_url && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Signed Document</Label>
+                      <a href={selectedApp.signed_document_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline block text-sm">
+                        Download Document
+                      </a>
+                    </div>
+                  )}
+                  {!selectedApp.id_card_front_url && !selectedApp.id_card_back_url && !selectedApp.signed_document_url && (
+                    <p className="text-sm text-muted-foreground">No documents uploaded</p>
+                  )}
+                </div>
+
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-2">Questionnaire Answers</h3>
+                {selectedApp.answers && typeof selectedApp.answers === 'object' && Object.keys(selectedApp.answers as object).length > 0 ? (
                   <div className="space-y-2">
                     {Object.entries(selectedApp.answers as Record<string, string>).map(([key, value]) => (
                       <div key={key}>
@@ -329,8 +370,11 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No answers provided</p>
                 )}
-                <div>
+
+                <div className="pt-2">
                   <Label className="text-xs text-muted-foreground">Submitted</Label>
                   <p className="text-sm">{formatDate(selectedApp.created_at)}</p>
                 </div>
