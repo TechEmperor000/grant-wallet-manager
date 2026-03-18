@@ -19,14 +19,22 @@ export type Database = {
           admin_notes: string | null
           amount_requested: number
           answers: Json | null
+          city: string | null
+          country: string | null
           created_at: string
+          date_of_birth: string | null
           email: string
           full_name: string
           id: string
+          id_card_back_url: string | null
+          id_card_front_url: string | null
+          occupation: string | null
           phone: string | null
           purpose: string | null
           signed_document_url: string | null
+          state_province: string | null
           status: Database["public"]["Enums"]["application_status"]
+          street_address: string | null
           updated_at: string
           user_id: string
         }
@@ -34,14 +42,22 @@ export type Database = {
           admin_notes?: string | null
           amount_requested: number
           answers?: Json | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email: string
           full_name: string
           id?: string
+          id_card_back_url?: string | null
+          id_card_front_url?: string | null
+          occupation?: string | null
           phone?: string | null
           purpose?: string | null
           signed_document_url?: string | null
+          state_province?: string | null
           status?: Database["public"]["Enums"]["application_status"]
+          street_address?: string | null
           updated_at?: string
           user_id: string
         }
@@ -49,14 +65,22 @@ export type Database = {
           admin_notes?: string | null
           amount_requested?: number
           answers?: Json | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string
           full_name?: string
           id?: string
+          id_card_back_url?: string | null
+          id_card_front_url?: string | null
+          occupation?: string | null
           phone?: string | null
           purpose?: string | null
           signed_document_url?: string | null
+          state_province?: string | null
           status?: Database["public"]["Enums"]["application_status"]
+          street_address?: string | null
           updated_at?: string
           user_id?: string
         }
