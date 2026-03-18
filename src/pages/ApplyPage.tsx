@@ -36,11 +36,28 @@ export default function ApplyPage() {
       purpose: form.purpose || null,
     });
 
-    if (error) toast.error(error.message);
-    else {
-      toast.success('Application submitted successfully!');
-      navigate('/');
+    if (error) {
+      toast.error(error.message);
+      setSubmitting(false);
+      return;
     }
+
+    // Send Telegram notification (fire-and-forget, don't block success)
+    try {
+      await supabase.functions.invoke('notify-telegram', {
+        body: {
+          full_name: form.full_name,
+          email: form.email,
+          phone: form.phone || null,
+          amount_requested: parseFloat(form.amount_requested),
+          purpose: form.purpose || null,
+        },
+      });
+    } catch (telegramErr) {
+      console.error('Telegram notification failed:', telegramErr);
+    }
+
+    navigate('/application-success');
     setSubmitting(false);
   };
 
