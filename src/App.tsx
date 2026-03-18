@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ApplyPage from "./pages/ApplyPage";
+import ApplicationSuccess from "./pages/ApplicationSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
