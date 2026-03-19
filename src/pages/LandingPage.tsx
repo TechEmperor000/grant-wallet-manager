@@ -100,7 +100,7 @@ export default function LandingPage() {
       {/* Mission Section */}
       <section className="py-20 bg-card">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground">Our Mission</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif">Our Mission</h2>
           <div className="mx-auto mt-4 h-1 w-16 rounded-full bg-gold" />
           <p className="mt-6 max-w-3xl mx-auto text-lg text-muted-foreground leading-relaxed">
             We believe financial barriers should never stand in the way of progress. Our mission is to connect deserving individuals and communities with the funding they need to build businesses, pursue education, and strengthen their neighborhoods. Through transparent processes and rapid disbursement, we make grant funding accessible to everyone.
