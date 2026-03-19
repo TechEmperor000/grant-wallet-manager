@@ -154,7 +154,7 @@ export default function UserDashboard() {
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Grant Wallet Card */}
         <Card className="overflow-hidden">
-          <div className="bg-gradient-to-br from-[hsl(222,47%,11%)] to-[hsl(217,91%,30%)] p-8 text-[hsl(0,0%,100%)]">
+          <div className="bg-gradient-to-br from-[hsl(220,40%,13%)] to-[hsl(220,60%,25%)] p-8 text-[hsl(0,0%,100%)]">
             <div className="flex items-center gap-2 mb-1 opacity-80">
               <Wallet className="h-5 w-5" />
               <span className="text-sm font-medium uppercase tracking-wider">Grant Wallet Balance</span>
