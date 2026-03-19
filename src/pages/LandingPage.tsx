@@ -72,7 +72,7 @@ export default function LandingPage() {
               <Star className="h-3.5 w-3.5 text-gold" />
               <span className="text-sm font-medium text-gold">Trusted by 10,000+ Recipients Nationwide</span>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-[hsl(0,0%,100%)]">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-[hsl(0,0%,100%)] font-serif">
               Empowering Dreams Worldwide – Apply for Grants Today
             </h1>
             <p className="mt-6 text-lg md:text-xl text-[hsl(210,40%,80%)] leading-relaxed max-w-xl">
