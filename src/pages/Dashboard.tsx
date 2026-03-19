@@ -229,7 +229,7 @@ export default function UserDashboard() {
                       <TableRow key={tx.id}>
                         <TableCell className="text-sm">{tx.description || 'Grant Credit'}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatDate(tx.created_at)}</TableCell>
-                        <TableCell className="text-right font-semibold text-emerald-600">+{formatCurrency(tx.amount)}</TableCell>
+                        <TableCell className="text-right font-semibold text-success">+{formatCurrency(tx.amount)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
