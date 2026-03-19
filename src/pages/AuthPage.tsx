@@ -39,16 +39,19 @@ export default function AuthPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const { error } = await supabase.auth.signUp({
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
       },
     });
     if (error) toast.error(error.message);
-    else toast.success('Check your email for the confirmation link');
+    else if (data.session) {
+      toast.success('Account created successfully!');
+    } else {
+      toast.success('Check your email for the confirmation link');
+    }
     setSubmitting(false);
   };
 

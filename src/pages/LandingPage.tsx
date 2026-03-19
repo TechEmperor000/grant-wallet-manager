@@ -64,7 +64,7 @@ export default function LandingPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <img src={heroImage} alt="Diverse community of grant recipients celebrating" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(222,47%,11%,0.92)] via-[hsl(222,47%,11%,0.8)] to-[hsl(222,47%,11%,0.6)]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(220,40%,13%,0.94)] via-[hsl(220,40%,13%,0.82)] to-[hsl(220,40%,13%,0.6)]" />
         </div>
         <div className="relative max-w-7xl mx-auto px-6 py-28 lg:py-40">
           <div className="max-w-2xl">
@@ -72,7 +72,7 @@ export default function LandingPage() {
               <Star className="h-3.5 w-3.5 text-gold" />
               <span className="text-sm font-medium text-gold">Trusted by 10,000+ Recipients Nationwide</span>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-[hsl(0,0%,100%)]">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-[hsl(0,0%,100%)] font-serif">
               Empowering Dreams Worldwide – Apply for Grants Today
             </h1>
             <p className="mt-6 text-lg md:text-xl text-[hsl(210,40%,80%)] leading-relaxed max-w-xl">
@@ -100,7 +100,7 @@ export default function LandingPage() {
       {/* Mission Section */}
       <section className="py-20 bg-card">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground">Our Mission</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif">Our Mission</h2>
           <div className="mx-auto mt-4 h-1 w-16 rounded-full bg-gold" />
           <p className="mt-6 max-w-3xl mx-auto text-lg text-muted-foreground leading-relaxed">
             We believe financial barriers should never stand in the way of progress. Our mission is to connect deserving individuals and communities with the funding they need to build businesses, pursue education, and strengthen their neighborhoods. Through transparent processes and rapid disbursement, we make grant funding accessible to everyone.
@@ -125,7 +125,7 @@ export default function LandingPage() {
       <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Success Stories</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif">Success Stories</h2>
             <div className="mx-auto mt-4 h-1 w-16 rounded-full bg-gold" />
             <p className="mt-4 text-muted-foreground">Hear from real people whose lives were transformed by our grants</p>
           </div>
@@ -154,7 +154,7 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-20 bg-card">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">How It Works</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif">How It Works</h2>
             <div className="mx-auto mt-4 h-1 w-16 rounded-full bg-gold" />
             <p className="mt-4 text-muted-foreground">Four simple steps to receive your grant funding</p>
           </div>
@@ -184,7 +184,7 @@ export default function LandingPage() {
       <section className="py-20 bg-background">
         <div className="max-w-3xl mx-auto px-6">
           <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Frequently Asked Questions</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif">Frequently Asked Questions</h2>
             <div className="mx-auto mt-4 h-1 w-16 rounded-full bg-gold" />
           </div>
           <Accordion type="single" collapsible className="mt-10">
@@ -199,9 +199,9 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-gradient-to-br from-[hsl(222,47%,11%)] to-[hsl(217,91%,25%)]">
+      <section className="py-20 bg-gradient-to-br from-[hsl(220,40%,13%)] to-[hsl(220,60%,22%)]">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-[hsl(0,0%,100%)]">Ready to Apply?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-[hsl(0,0%,100%)] font-serif">Ready to Apply?</h2>
           <p className="mt-4 text-lg text-[hsl(210,40%,80%)]">
             Join thousands who have already received funding. Applications are free and take less than 10 minutes.
           </p>
