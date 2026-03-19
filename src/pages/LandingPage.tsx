@@ -64,7 +64,7 @@ export default function LandingPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <img src={heroImage} alt="Diverse community of grant recipients celebrating" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(222,47%,11%,0.92)] via-[hsl(222,47%,11%,0.8)] to-[hsl(222,47%,11%,0.6)]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(220,40%,13%,0.94)] via-[hsl(220,40%,13%,0.82)] to-[hsl(220,40%,13%,0.6)]" />
         </div>
         <div className="relative max-w-7xl mx-auto px-6 py-28 lg:py-40">
           <div className="max-w-2xl">
