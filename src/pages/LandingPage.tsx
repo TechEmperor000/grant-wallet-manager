@@ -184,7 +184,7 @@ export default function LandingPage() {
       <section className="py-20 bg-background">
         <div className="max-w-3xl mx-auto px-6">
           <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Frequently Asked Questions</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif">Frequently Asked Questions</h2>
             <div className="mx-auto mt-4 h-1 w-16 rounded-full bg-gold" />
           </div>
           <Accordion type="single" collapsible className="mt-10">
