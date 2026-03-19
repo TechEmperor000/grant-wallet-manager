@@ -125,7 +125,7 @@ export default function LandingPage() {
       <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">Success Stories</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif">Success Stories</h2>
             <div className="mx-auto mt-4 h-1 w-16 rounded-full bg-gold" />
             <p className="mt-4 text-muted-foreground">Hear from real people whose lives were transformed by our grants</p>
           </div>
