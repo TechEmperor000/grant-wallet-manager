@@ -201,7 +201,7 @@ export default function LandingPage() {
       {/* Final CTA */}
       <section className="py-20 bg-gradient-to-br from-[hsl(220,40%,13%)] to-[hsl(220,60%,22%)]">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-[hsl(0,0%,100%)]">Ready to Apply?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-[hsl(0,0%,100%)] font-serif">Ready to Apply?</h2>
           <p className="mt-4 text-lg text-[hsl(210,40%,80%)]">
             Join thousands who have already received funding. Applications are free and take less than 10 minutes.
           </p>

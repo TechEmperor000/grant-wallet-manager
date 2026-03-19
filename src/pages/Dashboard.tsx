@@ -166,7 +166,7 @@ export default function UserDashboard() {
               Available grant funds
             </p>
             <Button
-              className="mt-4 bg-[hsl(0,0%,100%)] text-[hsl(222,47%,11%)] hover:bg-[hsl(0,0%,90%)] font-semibold"
+              className="mt-4 bg-gold text-gold-foreground hover:bg-gold-dark font-semibold"
               size="lg"
               onClick={() => setWithdrawOpen(true)}
             >
