@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'flexymicheal12@gmail.com';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -25,54 +27,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  const checkAdminRole = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-      setIsAdmin(!!data);
-    } catch {
-      setIsAdmin(false);
-    }
+  const checkAdmin = (currentUser: User | null) => {
+    setIsAdmin(
+      !!currentUser?.email &&
+      currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+    );
   };
 
   useEffect(() => {
-    // Safety timeout: if loading takes >10s, stop blocking UI
     const timeout = setTimeout(() => {
-      if (loading) {
-        setLoadingTimeout(true);
-        setLoading(false);
-      }
+      if (loading) setLoading(false);
     }, 10000);
 
-    // 1. Set up auth listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-
-        if (session?.user) {
-          // Use setTimeout to avoid Supabase auth deadlock
-          setTimeout(() => checkAdminRole(session.user.id), 0);
-        } else {
-          setIsAdmin(false);
-        }
+        checkAdmin(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    // 2. Then fetch current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        checkAdminRole(session.user.id);
-      }
+      checkAdmin(session?.user ?? null);
       setLoading(false);
     }).catch(() => {
       setLoading(false);
