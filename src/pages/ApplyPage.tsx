@@ -213,25 +213,20 @@ export default function ApplyPage() {
                     <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Date of Birth <span className="text-destructive">*</span></Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !dateOfBirth && 'text-muted-foreground')}>
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {dateOfBirth ? format(dateOfBirth, 'PPP') : 'Pick a date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={dateOfBirth}
-                          onSelect={setDateOfBirth}
-                          disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-                          initialFocus
-                          className={cn('p-3 pointer-events-auto')}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <Label htmlFor="dob">Date of Birth <span className="text-destructive">*</span></Label>
+                    <Input
+                      id="dob"
+                      type="date"
+                      max={new Date().toISOString().split('T')[0]}
+                      min="1900-01-01"
+                      value={dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : ''}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setDateOfBirth(val ? new Date(val + 'T00:00:00') : undefined);
+                      }}
+                      className="w-full"
+                      required
+                    />
                   </div>
                 </div>
 
