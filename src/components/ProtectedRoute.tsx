@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function ProtectedRoute({ children, requireAdmin = false }: { children: React.ReactNode; requireAdmin?: boolean }) {
   const { user, loading, isAdmin } = useAuth();
@@ -27,6 +28,15 @@ export default function ProtectedRoute({ children, requireAdmin = false }: { chi
     );
   }
 
+  if (!user) return <Navigate to="/auth" replace />;
+
+  if (requireAdmin && !isAdmin) {
+    toast.error('Admin access only');
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
   if (!user) return <Navigate to="/auth" replace />;
   if (requireAdmin && !isAdmin) return <Navigate to="/" replace />;
 
