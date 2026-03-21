@@ -5,7 +5,7 @@ const TAWK_WIDGET_ID = 'default';
 
 export default function TawkToWidget() {
   useEffect(() => {
-    if (TAWK_PROPERTY_ID === 'TAWK_PROPERTY_ID') return; // placeholder — skip loading
+    if (!TAWK_PROPERTY_ID) return;
 
     const script = document.createElement('script');
     script.async = true;
