@@ -231,7 +231,7 @@ export default function AdminDashboard() {
                 ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
-                      No applications found
+                      {search || statusFilter !== 'all' ? 'No applications match your filters' : 'No applications yet – test by submitting as a regular user'}
                     </TableCell>
                   </TableRow>
                 ) : (
