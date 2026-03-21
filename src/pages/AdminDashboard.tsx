@@ -44,7 +44,21 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchApplications(); }, []);
+  useEffect(() => {
+    fetchApplications();
+
+    // Realtime subscription for live updates
+    const channel = supabase
+      .channel('admin-applications')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'applications' },
+        () => { fetchApplications(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const filtered = applications.filter(app => {
     const matchesSearch = app.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -217,7 +231,7 @@ export default function AdminDashboard() {
                 ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
-                      No applications found
+                      {search || statusFilter !== 'all' ? 'No applications match your filters' : 'No applications yet – test by submitting as a regular user'}
                     </TableCell>
                   </TableRow>
                 ) : (
