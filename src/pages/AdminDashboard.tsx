@@ -44,7 +44,21 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchApplications(); }, []);
+  useEffect(() => {
+    fetchApplications();
+
+    // Realtime subscription for live updates
+    const channel = supabase
+      .channel('admin-applications')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'applications' },
+        () => { fetchApplications(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const filtered = applications.filter(app => {
     const matchesSearch = app.full_name.toLowerCase().includes(search.toLowerCase()) ||
