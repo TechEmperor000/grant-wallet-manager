@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Loader2, Shield } from 'lucide-react';
+import { Loader2, Shield, Eye, EyeOff } from 'lucide-react';
 
 export default function AuthPage() {
   const { user, loading } = useAuth();
