@@ -24,6 +24,7 @@ const statusColors: Record<string, string> = {
 export default function AdminDashboard() {
   const { signOut } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
+  const [profileCountries, setProfileCountries] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -41,6 +42,17 @@ export default function AdminDashboard() {
       .order('created_at', { ascending: false });
     if (error) toast.error(error.message);
     else setApplications(data || []);
+
+    // Fetch profile countries
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, country' as any);
+    if (profiles) {
+      const map: Record<string, string> = {};
+      (profiles as any[]).forEach((p: any) => { if (p.country) map[p.user_id] = p.country; });
+      setProfileCountries(map);
+    }
+
     setLoading(false);
   };
 
@@ -213,6 +225,7 @@ export default function AdminDashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Applicant</TableHead>
+                  <TableHead>Country</TableHead>
                   <TableHead>Amount Requested</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>
@@ -221,16 +234,16 @@ export default function AdminDashboard() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
+                  Array.from({ length: 6 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 5 }).map((_, j) => (
+                      {Array.from({ length: 6 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                       {search || statusFilter !== 'all' ? 'No applications match your filters' : 'No applications yet – test by submitting as a regular user'}
                     </TableCell>
                   </TableRow>
@@ -243,6 +256,7 @@ export default function AdminDashboard() {
                           <p className="text-sm text-muted-foreground">{app.email}</p>
                         </div>
                       </TableCell>
+                      <TableCell className="text-muted-foreground">{profileCountries[app.user_id] || 'Unknown'}</TableCell>
                       <TableCell className="font-semibold">{formatCurrency(app.amount_requested)}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={statusColors[app.status]}>

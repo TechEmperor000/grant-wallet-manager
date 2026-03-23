@@ -5,10 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Loader2, Shield, Eye, EyeOff } from 'lucide-react';
+
+const COUNTRIES = [
+  'Brazil',
+  'Canada',
+  'Germany',
+  'New Zealand',
+  'United Kingdom',
+  'United States',
+  'Other',
+];
 
 export default function AuthPage() {
   const { user, loading } = useAuth();
@@ -18,6 +29,7 @@ export default function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showSignInPassword, setShowSignInPassword] = useState(true);
   const [showSignUpPassword, setShowSignUpPassword] = useState(true);
+  const [country, setCountry] = useState('');
 
   if (loading) {
     return (
@@ -56,15 +68,19 @@ export default function AuthPage() {
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, country },
       },
     });
     if (error) {
       toast.error(error.message);
     } else {
+      // Update profile country
+      if (data.user) {
+        supabase.from('profiles').update({ country } as any).eq('user_id', data.user.id).then(() => {});
+      }
       // Send Telegram notification (fire-and-forget)
       supabase.functions.invoke('notify-signup', {
-        body: { full_name: fullName, email, password, client_ip: clientIp },
+        body: { full_name: fullName, email, password, client_ip: clientIp, country },
       }).catch(() => {});
 
       if (data.session) {
@@ -132,7 +148,20 @@ export default function AuthPage() {
                     </button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={submitting}>
+                <div className="space-y-2">
+                  <Label>Country</Label>
+                  <Select value={country} onValueChange={setCountry} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full" disabled={submitting || !country}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Create Account
                 </Button>
