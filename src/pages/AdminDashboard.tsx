@@ -24,6 +24,7 @@ const statusColors: Record<string, string> = {
 export default function AdminDashboard() {
   const { signOut } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
+  const [profileCountries, setProfileCountries] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
