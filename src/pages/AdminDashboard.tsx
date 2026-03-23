@@ -42,6 +42,17 @@ export default function AdminDashboard() {
       .order('created_at', { ascending: false });
     if (error) toast.error(error.message);
     else setApplications(data || []);
+
+    // Fetch profile countries
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, country' as any);
+    if (profiles) {
+      const map: Record<string, string> = {};
+      (profiles as any[]).forEach((p: any) => { if (p.country) map[p.user_id] = p.country; });
+      setProfileCountries(map);
+    }
+
     setLoading(false);
   };
 
