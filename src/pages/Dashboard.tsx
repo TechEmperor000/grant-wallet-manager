@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Wallet, ArrowUpRight, LogOut, FileText, Shield, Plus, ArrowDownToLine, AlertTriangle, Loader2 } from 'lucide-react';
+import { Wallet, ArrowUpRight, LogOut, FileText, Shield, Plus, ArrowDownToLine, AlertTriangle, Loader2, X, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -66,6 +66,11 @@ export default function UserDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [balanceFlash, setBalanceFlash] = useState(false);
+  const [approvalBanner, setApprovalBanner] = useState<{
+    requested: number;
+    credited: number;
+    reason: string;
+  } | null>(null);
 
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
@@ -90,13 +95,74 @@ export default function UserDashboard() {
 
   useEffect(() => {
     if (!user) return;
+
+    // Check for recent credited applications on load
+    const checkRecentApproval = async () => {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'credited')
+        .gte('updated_at', sevenDaysAgo)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        const app = data[0];
+        // Find latest credit transaction for this app
+        const { data: txData } = await supabase
+          .from('transactions')
+          .select('amount')
+          .eq('application_id', app.id)
+          .eq('type', 'credit')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const creditedAmount = txData?.[0]?.amount ?? app.amount_requested;
+        setApprovalBanner({
+          requested: app.amount_requested,
+          credited: Number(creditedAmount),
+          reason: (app as any).approval_reason || 'Approved based on review and available funds',
+        });
+      }
+    };
+    checkRecentApproval();
+
     const channel = supabase
       .channel('wallet-updates')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wallets', filter: `user_id=eq.${user.id}` }, (payload) => {
-        setWallet(payload.new as WalletRow);
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wallets', filter: `user_id=eq.${user.id}` }, async (payload) => {
+        const newWallet = payload.new as WalletRow;
+        const oldBalance = wallet?.balance ?? 0;
+        setWallet(newWallet);
         setBalanceFlash(true);
         setTimeout(() => setBalanceFlash(false), 1000);
         toast.success('Your balance has been updated!');
+
+        // If balance increased, fetch latest credited app
+        if (Number(newWallet.balance) > Number(oldBalance)) {
+          const { data } = await supabase
+            .from('applications')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'credited')
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          if (data && data.length > 0) {
+            const app = data[0];
+            const { data: txData } = await supabase
+              .from('transactions')
+              .select('amount')
+              .eq('application_id', app.id)
+              .eq('type', 'credit')
+              .order('created_at', { ascending: false })
+              .limit(1);
+            const creditedAmount = txData?.[0]?.amount ?? app.amount_requested;
+            setApprovalBanner({
+              requested: app.amount_requested,
+              credited: Number(creditedAmount),
+              reason: (app as any).approval_reason || 'Approved based on review and available funds',
+            });
+          }
+        }
       })
       .subscribe();
 
@@ -168,6 +234,33 @@ export default function UserDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        {approvalBanner && (
+          <Card className="border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800 relative overflow-hidden">
+            <button
+              onClick={() => setApprovalBanner(null)}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-emerald-800 dark:text-emerald-300 text-lg">Grant Approved!</h3>
+                  <div className="text-sm space-y-0.5 text-emerald-700 dark:text-emerald-400">
+                    <p>Requested: <span className="font-semibold">{formatCurrency(approvalBanner.requested)}</span></p>
+                    <p>Approved &amp; Credited: <span className="font-semibold text-primary">{formatCurrency(approvalBanner.credited)}</span></p>
+                    <p>Reason: <span className="italic">{approvalBanner.reason}</span></p>
+                  </div>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-2">Funds are now in your wallet balance (see above).</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="overflow-hidden">
           <div className="bg-gradient-to-br from-[hsl(220,40%,13%)] to-[hsl(220,60%,25%)] p-8 text-[hsl(0,0%,100%)]">
             <div className="flex items-center gap-2 mb-1 opacity-80">

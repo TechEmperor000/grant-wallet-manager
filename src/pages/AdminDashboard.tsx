@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Search, CheckCircle, XCircle, DollarSign, LogOut, Eye, LayoutDashboard } from 'lucide-react';
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
   const [showCreditDialog, setShowCreditDialog] = useState(false);
   const [creditApp, setCreditApp] = useState<Application | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [approvalReason, setApprovalReason] = useState('');
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -146,15 +148,16 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Update application status
+    // Update application status + approval reason
     await supabase
       .from('applications')
-      .update({ status: 'credited' as const })
+      .update({ status: 'credited' as const, approval_reason: approvalReason || null } as any)
       .eq('id', creditApp.id);
 
     toast.success(`$${amount.toLocaleString()} credited successfully`);
     setShowCreditDialog(false);
     setCreditAmount('');
+    setApprovalReason('');
     setCreditApp(null);
     fetchApplications();
     setProcessing(false);
@@ -437,6 +440,15 @@ export default function AdminDashboard() {
                     placeholder="0.00"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Reason for Approval/Adjustment <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Textarea
+                  value={approvalReason}
+                  onChange={e => setApprovalReason(e.target.value)}
+                  placeholder="e.g., Increased due to higher impact potential"
+                  rows={3}
+                />
               </div>
               <Button
                 onClick={handleCreditGrant}
