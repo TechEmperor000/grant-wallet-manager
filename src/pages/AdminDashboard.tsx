@@ -256,8 +256,8 @@ export default function AdminDashboard() {
                           <p className="text-sm text-muted-foreground">{app.email}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="font-semibold">{formatCurrency(app.amount_requested)}</TableCell>
                       <TableCell className="text-muted-foreground">{profileCountries[app.user_id] || 'Unknown'}</TableCell>
+                      <TableCell className="font-semibold">{formatCurrency(app.amount_requested)}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={statusColors[app.status]}>
                           {app.status}
