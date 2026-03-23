@@ -66,6 +66,11 @@ export default function UserDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [balanceFlash, setBalanceFlash] = useState(false);
+  const [approvalBanner, setApprovalBanner] = useState<{
+    requested: number;
+    credited: number;
+    reason: string;
+  } | null>(null);
 
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
