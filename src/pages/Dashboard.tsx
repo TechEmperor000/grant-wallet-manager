@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Wallet, ArrowUpRight, LogOut, FileText, Shield, Plus, ArrowDownToLine, AlertTriangle, Loader2 } from 'lucide-react';
+import { Wallet, ArrowUpRight, LogOut, FileText, Shield, Plus, ArrowDownToLine, AlertTriangle, Loader2, X, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Database } from '@/integrations/supabase/types';
 
