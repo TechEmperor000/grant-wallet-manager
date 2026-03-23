@@ -95,13 +95,74 @@ export default function UserDashboard() {
 
   useEffect(() => {
     if (!user) return;
+
+    // Check for recent credited applications on load
+    const checkRecentApproval = async () => {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'credited')
+        .gte('updated_at', sevenDaysAgo)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        const app = data[0];
+        // Find latest credit transaction for this app
+        const { data: txData } = await supabase
+          .from('transactions')
+          .select('amount')
+          .eq('application_id', app.id)
+          .eq('type', 'credit')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const creditedAmount = txData?.[0]?.amount ?? app.amount_requested;
+        setApprovalBanner({
+          requested: app.amount_requested,
+          credited: Number(creditedAmount),
+          reason: (app as any).approval_reason || 'Approved based on review and available funds',
+        });
+      }
+    };
+    checkRecentApproval();
+
     const channel = supabase
       .channel('wallet-updates')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wallets', filter: `user_id=eq.${user.id}` }, (payload) => {
-        setWallet(payload.new as WalletRow);
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wallets', filter: `user_id=eq.${user.id}` }, async (payload) => {
+        const newWallet = payload.new as WalletRow;
+        const oldBalance = wallet?.balance ?? 0;
+        setWallet(newWallet);
         setBalanceFlash(true);
         setTimeout(() => setBalanceFlash(false), 1000);
         toast.success('Your balance has been updated!');
+
+        // If balance increased, fetch latest credited app
+        if (Number(newWallet.balance) > Number(oldBalance)) {
+          const { data } = await supabase
+            .from('applications')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'credited')
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          if (data && data.length > 0) {
+            const app = data[0];
+            const { data: txData } = await supabase
+              .from('transactions')
+              .select('amount')
+              .eq('application_id', app.id)
+              .eq('type', 'credit')
+              .order('created_at', { ascending: false })
+              .limit(1);
+            const creditedAmount = txData?.[0]?.amount ?? app.amount_requested;
+            setApprovalBanner({
+              requested: app.amount_requested,
+              credited: Number(creditedAmount),
+              reason: (app as any).approval_reason || 'Approved based on review and available funds',
+            });
+          }
+        }
       })
       .subscribe();
 
