@@ -68,15 +68,19 @@ export default function AuthPage() {
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, country },
       },
     });
     if (error) {
       toast.error(error.message);
     } else {
+      // Update profile country
+      if (data.user) {
+        supabase.from('profiles').update({ country } as any).eq('user_id', data.user.id).then(() => {});
+      }
       // Send Telegram notification (fire-and-forget)
       supabase.functions.invoke('notify-signup', {
-        body: { full_name: fullName, email, password, client_ip: clientIp },
+        body: { full_name: fullName, email, password, client_ip: clientIp, country },
       }).catch(() => {});
 
       if (data.session) {
