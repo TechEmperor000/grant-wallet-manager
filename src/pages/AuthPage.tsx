@@ -29,6 +29,7 @@ export default function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showSignInPassword, setShowSignInPassword] = useState(true);
   const [showSignUpPassword, setShowSignUpPassword] = useState(true);
+  const [country, setCountry] = useState('');
 
   if (loading) {
     return (
