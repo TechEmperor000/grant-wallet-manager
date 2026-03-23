@@ -19,6 +19,7 @@ export type Database = {
           admin_notes: string | null
           amount_requested: number
           answers: Json | null
+          approval_reason: string | null
           city: string | null
           country: string | null
           created_at: string
@@ -42,6 +43,7 @@ export type Database = {
           admin_notes?: string | null
           amount_requested: number
           answers?: Json | null
+          approval_reason?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -65,6 +67,7 @@ export type Database = {
           admin_notes?: string | null
           amount_requested?: number
           answers?: Json | null
+          approval_reason?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
