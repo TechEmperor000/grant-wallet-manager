@@ -225,6 +225,7 @@ export default function AdminDashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Applicant</TableHead>
+                  <TableHead>Country</TableHead>
                   <TableHead>Amount Requested</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>
