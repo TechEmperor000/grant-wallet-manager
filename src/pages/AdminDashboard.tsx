@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const [showCreditDialog, setShowCreditDialog] = useState(false);
   const [creditApp, setCreditApp] = useState<Application | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [approvalReason, setApprovalReason] = useState('');
 
   const fetchApplications = async () => {
     setLoading(true);
