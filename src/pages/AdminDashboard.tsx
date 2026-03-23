@@ -147,15 +147,16 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Update application status
+    // Update application status + approval reason
     await supabase
       .from('applications')
-      .update({ status: 'credited' as const })
+      .update({ status: 'credited' as const, approval_reason: approvalReason || null } as any)
       .eq('id', creditApp.id);
 
     toast.success(`$${amount.toLocaleString()} credited successfully`);
     setShowCreditDialog(false);
     setCreditAmount('');
+    setApprovalReason('');
     setCreditApp(null);
     fetchApplications();
     setProcessing(false);
