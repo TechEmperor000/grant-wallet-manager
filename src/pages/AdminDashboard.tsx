@@ -440,6 +440,15 @@ export default function AdminDashboard() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>Reason for Approval/Adjustment <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Textarea
+                  value={approvalReason}
+                  onChange={e => setApprovalReason(e.target.value)}
+                  placeholder="e.g., Increased due to higher impact potential"
+                  rows={3}
+                />
+              </div>
               <Button
                 onClick={handleCreditGrant}
                 disabled={processing || !creditAmount}
