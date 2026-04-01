@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           admin_notes: string | null
@@ -23,12 +44,14 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          custom_error_message: string | null
           date_of_birth: string | null
           email: string
           full_name: string
           id: string
           id_card_back_url: string | null
           id_card_front_url: string | null
+          next_error_code: string | null
           occupation: string | null
           phone: string | null
           purpose: string | null
@@ -47,12 +70,14 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          custom_error_message?: string | null
           date_of_birth?: string | null
           email: string
           full_name: string
           id?: string
           id_card_back_url?: string | null
           id_card_front_url?: string | null
+          next_error_code?: string | null
           occupation?: string | null
           phone?: string | null
           purpose?: string | null
@@ -71,12 +96,14 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          custom_error_message?: string | null
           date_of_birth?: string | null
           email?: string
           full_name?: string
           id?: string
           id_card_back_url?: string | null
           id_card_front_url?: string | null
+          next_error_code?: string | null
           occupation?: string | null
           phone?: string | null
           purpose?: string | null
