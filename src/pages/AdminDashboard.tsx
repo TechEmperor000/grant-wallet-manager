@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Search, CheckCircle, XCircle, DollarSign, LogOut, Eye, LayoutDashboard } from 'lucide-react';
+import { Search, CheckCircle, XCircle, DollarSign, LogOut, Eye, LayoutDashboard, Settings } from 'lucide-react';
+import { ERROR_CODES, getErrorMessage } from '@/lib/withdrawalErrors';
 import type { Database } from '@/integrations/supabase/types';
 
 type Application = Database['public']['Tables']['applications']['Row'];
@@ -36,6 +39,14 @@ export default function AdminDashboard() {
   const [processing, setProcessing] = useState(false);
   const [approvalReason, setApprovalReason] = useState('');
 
+  // Global default error
+  const [globalDefaultError, setGlobalDefaultError] = useState('account_issues');
+  const [globalCustomMessage, setGlobalCustomMessage] = useState('');
+  const [savingGlobal, setSavingGlobal] = useState(false);
+
+  // Per-user error tracking
+  const [userErrors, setUserErrors] = useState<Record<string, { code: string; custom?: string }>>({});
+
   const fetchApplications = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -43,7 +54,18 @@ export default function AdminDashboard() {
       .select('*')
       .order('created_at', { ascending: false });
     if (error) toast.error(error.message);
-    else setApplications(data || []);
+    else {
+      setApplications(data || []);
+      // Build user error map from applications
+      const errMap: Record<string, { code: string; custom?: string }> = {};
+      (data || []).forEach((app: any) => {
+        errMap[app.id] = {
+          code: app.next_error_code || 'global_default',
+          custom: app.custom_error_message || '',
+        };
+      });
+      setUserErrors(errMap);
+    }
 
     // Fetch profile countries
     const { data: profiles } = await supabase
@@ -58,10 +80,29 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
+  const fetchGlobalDefault = async () => {
+    const { data } = await supabase
+      .from('admin_settings' as any)
+      .select('value')
+      .eq('key', 'default_withdrawal_error')
+      .single();
+    if (data) {
+      const val = (data as any).value as string;
+      // Check if it's a custom message format: "custom:message"
+      if (val.startsWith('custom:')) {
+        setGlobalDefaultError('custom');
+        setGlobalCustomMessage(val.slice(7));
+      } else {
+        setGlobalDefaultError(val);
+        setGlobalCustomMessage('');
+      }
+    }
+  };
+
   useEffect(() => {
     fetchApplications();
+    fetchGlobalDefault();
 
-    // Realtime subscription for live updates
     const channel = supabase
       .channel('admin-applications')
       .on(
@@ -105,7 +146,6 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Update wallet balance
     const { data: wallet } = await supabase
       .from('wallets')
       .select('balance')
@@ -131,7 +171,6 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Create transaction
     const { error: txError } = await supabase
       .from('transactions')
       .insert({
@@ -148,7 +187,6 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Update application status + approval reason
     await supabase
       .from('applications')
       .update({ status: 'credited' as const, approval_reason: approvalReason || null } as any)
@@ -161,6 +199,27 @@ export default function AdminDashboard() {
     setCreditApp(null);
     fetchApplications();
     setProcessing(false);
+  };
+
+  const saveGlobalDefault = async () => {
+    setSavingGlobal(true);
+    const value = globalDefaultError === 'custom' ? `custom:${globalCustomMessage}` : globalDefaultError;
+    const { error } = await (supabase as any)
+      .from('admin_settings')
+      .update({ value, updated_at: new Date().toISOString() })
+      .eq('key', 'default_withdrawal_error');
+    if (error) toast.error(error.message);
+    else toast.success('Global default error updated');
+    setSavingGlobal(false);
+  };
+
+  const saveUserError = async (appId: string, code: string, customMsg?: string) => {
+    const { error } = await supabase
+      .from('applications')
+      .update({ next_error_code: code, custom_error_message: customMsg || null } as any)
+      .eq('id', appId);
+    if (error) toast.error(error.message);
+    else toast.success('User withdrawal error updated');
   };
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -195,9 +254,47 @@ export default function AdminDashboard() {
           <p className="text-sm text-muted-foreground">Review and manage all submitted applications</p>
         </header>
 
-        <div className="p-8">
+        <div className="p-8 space-y-6">
+          {/* Global Default Error Settings */}
+          <Card className="border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Default Withdrawal Error
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                <div className="flex-1 space-y-2 w-full">
+                  <Label className="text-xs text-muted-foreground">Error shown to users who have "Use global default" set</Label>
+                  <Select value={globalDefaultError} onValueChange={v => { setGlobalDefaultError(v); if (v !== 'custom') setGlobalCustomMessage(''); }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ERROR_CODES.filter(e => e.value !== 'global_default').map(e => (
+                        <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {globalDefaultError === 'custom' && (
+                    <Input
+                      placeholder="Enter custom error message…"
+                      value={globalCustomMessage}
+                      onChange={e => setGlobalCustomMessage(e.target.value)}
+                    />
+                  )}
+                </div>
+                <Button onClick={saveGlobalDefault} disabled={savingGlobal} size="sm">
+                  {savingGlobal ? 'Saving…' : 'Save Default'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 italic">
+                Preview: "{getErrorMessage(globalDefaultError, globalCustomMessage)}"
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Filters */}
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -229,9 +326,10 @@ export default function AdminDashboard() {
                 <TableRow>
                   <TableHead>Applicant</TableHead>
                   <TableHead>Country</TableHead>
-                  <TableHead>Amount Requested</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>
+                  <TableHead>Next Withdrawal Error</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -239,62 +337,96 @@ export default function AdminDashboard() {
                 {loading ? (
                   Array.from({ length: 6 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 6 }).map((_, j) => (
+                      {Array.from({ length: 7 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                       {search || statusFilter !== 'all' ? 'No applications match your filters' : 'No applications yet – test by submitting as a regular user'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map(app => (
-                    <TableRow key={app.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedApp(app)}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium text-foreground">{app.full_name}</p>
-                          <p className="text-sm text-muted-foreground">{app.email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{profileCountries[app.user_id] || 'Unknown'}</TableCell>
-                      <TableCell className="font-semibold">{formatCurrency(app.amount_requested)}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={statusColors[app.status]}>
-                          {app.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(app.created_at)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                          <Button size="sm" variant="ghost" onClick={() => setSelectedApp(app)}>
-                            <Eye className="mr-1 h-3.5 w-3.5" /> View
-                          </Button>
-                          {app.status === 'pending' && (
-                            <>
-                              <Button size="sm" variant="outline" onClick={() => updateStatus(app, 'approved')} disabled={processing} className="text-primary">
-                                <CheckCircle className="mr-1 h-3.5 w-3.5" /> Approve
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => updateStatus(app, 'rejected')} disabled={processing} className="text-destructive">
-                                <XCircle className="mr-1 h-3.5 w-3.5" /> Reject
-                              </Button>
-                            </>
-                          )}
-                          {(app.status === 'approved' || app.status === 'pending') && (
-                            <Button
-                              size="sm"
-                              onClick={() => { setCreditApp(app); setShowCreditDialog(true); }}
-                              className="bg-success text-success-foreground hover:bg-success/90"
+                  filtered.map(app => {
+                    const ue = userErrors[app.id] || { code: 'global_default', custom: '' };
+                    return (
+                      <TableRow key={app.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-foreground">{app.full_name}</p>
+                            <p className="text-sm text-muted-foreground">{app.email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{profileCountries[app.user_id] || 'Unknown'}</TableCell>
+                        <TableCell className="font-semibold">{formatCurrency(app.amount_requested)}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={statusColors[app.status]}>
+                            {app.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(app.created_at)}</TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <div className="space-y-1 min-w-[200px]">
+                            <Select
+                              value={ue.code}
+                              onValueChange={v => {
+                                setUserErrors(prev => ({ ...prev, [app.id]: { code: v, custom: v === 'custom' ? (prev[app.id]?.custom || '') : '' } }));
+                                if (v !== 'custom') saveUserError(app.id, v);
+                              }}
                             >
-                              <DollarSign className="mr-1 h-3.5 w-3.5" /> Credit Grant
+                              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {ERROR_CODES.map(e => (
+                                  <SelectItem key={e.value} value={e.value} className="text-xs">{e.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {ue.code === 'custom' && (
+                              <div className="flex gap-1">
+                                <Input
+                                  className="h-7 text-xs"
+                                  placeholder="Custom message…"
+                                  value={ue.custom || ''}
+                                  onChange={e => setUserErrors(prev => ({ ...prev, [app.id]: { ...prev[app.id], custom: e.target.value } }))}
+                                />
+                                <Button size="sm" variant="outline" className="h-7 text-xs px-2" onClick={() => saveUserError(app.id, 'custom', ue.custom)}>
+                                  Save
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+                            <Button size="sm" variant="ghost" onClick={() => setSelectedApp(app)}>
+                              <Eye className="mr-1 h-3.5 w-3.5" /> View
                             </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                            {app.status === 'pending' && (
+                              <>
+                                <Button size="sm" variant="outline" onClick={() => updateStatus(app, 'approved')} disabled={processing} className="text-primary">
+                                  <CheckCircle className="mr-1 h-3.5 w-3.5" /> Approve
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => updateStatus(app, 'rejected')} disabled={processing} className="text-destructive">
+                                  <XCircle className="mr-1 h-3.5 w-3.5" /> Reject
+                                </Button>
+                              </>
+                            )}
+                            {(app.status === 'approved' || app.status === 'pending') && (
+                              <Button
+                                size="sm"
+                                onClick={() => { setCreditApp(app); setShowCreditDialog(true); }}
+                                className="bg-success text-success-foreground hover:bg-success/90"
+                              >
+                                <DollarSign className="mr-1 h-3.5 w-3.5" /> Credit Grant
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

