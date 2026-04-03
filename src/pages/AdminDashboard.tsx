@@ -401,9 +401,9 @@ export default function AdminDashboard() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
+                  Array.from({ length: 8 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
+                      {Array.from({ length: 8 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                       ))}
                     </TableRow>
