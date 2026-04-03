@@ -427,6 +427,19 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell className="text-muted-foreground">{profileCountries[app.user_id] || 'Unknown'}</TableCell>
                         <TableCell className="font-semibold">{formatCurrency(app.amount_requested)}</TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{formatCurrency(userBalances[app.user_id] ?? 0)}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs px-2"
+                              onClick={() => { setBalanceApp(app); setShowBalanceDialog(true); setBalanceAmount(''); setBalanceAction('topup'); }}
+                            >
+                              <DollarSign className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={statusColors[app.status]}>
                             {app.status}
