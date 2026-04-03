@@ -392,6 +392,7 @@ export default function AdminDashboard() {
                   <TableHead>Applicant</TableHead>
                   <TableHead>Country</TableHead>
                   <TableHead>Amount</TableHead>
+                  <TableHead>Balance</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Next Withdrawal Error</TableHead>
