@@ -10,6 +10,7 @@ export default function ApplicationSuccess() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <SalesNotification />
       <div className="max-w-xl w-full text-center space-y-8">
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
           <CheckCircle className="h-12 w-12 text-success" />
