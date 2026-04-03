@@ -237,6 +237,56 @@ export default function AdminDashboard() {
     else toast.success('User withdrawal error updated');
   };
 
+  const handleBalanceAction = async () => {
+    if (!balanceApp || !balanceAmount) return;
+    setProcessing(true);
+    const amount = parseFloat(balanceAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Enter a valid positive amount');
+      setProcessing(false);
+      return;
+    }
+
+    const currentBalance = userBalances[balanceApp.user_id] ?? 0;
+    const newBalance = balanceAction === 'topup' ? currentBalance + amount : currentBalance - amount;
+
+    if (newBalance < 0) {
+      toast.error('Cannot deduct more than current balance');
+      setProcessing(false);
+      return;
+    }
+
+    const { error: walletError } = await supabase
+      .from('wallets')
+      .update({ balance: newBalance })
+      .eq('user_id', balanceApp.user_id);
+
+    if (walletError) {
+      toast.error(walletError.message);
+      setProcessing(false);
+      return;
+    }
+
+    const { error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: balanceApp.user_id,
+        application_id: balanceApp.id,
+        amount: balanceAction === 'topup' ? amount : -amount,
+        type: balanceAction === 'topup' ? 'credit' : 'debit',
+        description: `Admin ${balanceAction === 'topup' ? 'top-up' : 'deduction'}: $${amount.toLocaleString()}`,
+      });
+
+    if (txError) toast.error(txError.message);
+
+    toast.success(`$${amount.toLocaleString()} ${balanceAction === 'topup' ? 'added to' : 'deducted from'} ${balanceApp.full_name}'s balance`);
+    setShowBalanceDialog(false);
+    setBalanceAmount('');
+    setBalanceApp(null);
+    fetchApplications();
+    setProcessing(false);
+  };
+
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const formatCurrency = (n: number) => `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
