@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Search, CheckCircle, XCircle, DollarSign, LogOut, Eye, LayoutDashboard, Settings } from 'lucide-react';
+import { Search, CheckCircle, XCircle, DollarSign, LogOut, Eye, LayoutDashboard, Settings, ArrowUpRight, ArrowDownToLine } from 'lucide-react';
 import { ERROR_CODES, getErrorMessage } from '@/lib/withdrawalErrors';
 import type { Database } from '@/integrations/supabase/types';
 
