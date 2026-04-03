@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Search, CheckCircle, XCircle, DollarSign, LogOut, Eye, LayoutDashboard, Settings } from 'lucide-react';
+import { Search, CheckCircle, XCircle, DollarSign, LogOut, Eye, LayoutDashboard, Settings, ArrowUpRight, ArrowDownToLine } from 'lucide-react';
 import { ERROR_CODES, getErrorMessage } from '@/lib/withdrawalErrors';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -47,6 +47,13 @@ export default function AdminDashboard() {
   // Per-user error tracking
   const [userErrors, setUserErrors] = useState<Record<string, { code: string; custom?: string }>>({});
 
+  // Balance management
+  const [balanceApp, setBalanceApp] = useState<Application | null>(null);
+  const [showBalanceDialog, setShowBalanceDialog] = useState(false);
+  const [balanceAmount, setBalanceAmount] = useState('');
+  const [balanceAction, setBalanceAction] = useState<'topup' | 'deduct'>('topup');
+  const [userBalances, setUserBalances] = useState<Record<string, number>>({});
+
   const fetchApplications = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -75,6 +82,14 @@ export default function AdminDashboard() {
       const map: Record<string, string> = {};
       (profiles as any[]).forEach((p: any) => { if (p.country) map[p.user_id] = p.country; });
       setProfileCountries(map);
+    }
+
+    // Fetch wallet balances
+    const { data: wallets } = await supabase.from('wallets').select('user_id, balance');
+    if (wallets) {
+      const bMap: Record<string, number> = {};
+      wallets.forEach((w: any) => { bMap[w.user_id] = Number(w.balance); });
+      setUserBalances(bMap);
     }
 
     setLoading(false);
@@ -222,6 +237,56 @@ export default function AdminDashboard() {
     else toast.success('User withdrawal error updated');
   };
 
+  const handleBalanceAction = async () => {
+    if (!balanceApp || !balanceAmount) return;
+    setProcessing(true);
+    const amount = parseFloat(balanceAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Enter a valid positive amount');
+      setProcessing(false);
+      return;
+    }
+
+    const currentBalance = userBalances[balanceApp.user_id] ?? 0;
+    const newBalance = balanceAction === 'topup' ? currentBalance + amount : currentBalance - amount;
+
+    if (newBalance < 0) {
+      toast.error('Cannot deduct more than current balance');
+      setProcessing(false);
+      return;
+    }
+
+    const { error: walletError } = await supabase
+      .from('wallets')
+      .update({ balance: newBalance })
+      .eq('user_id', balanceApp.user_id);
+
+    if (walletError) {
+      toast.error(walletError.message);
+      setProcessing(false);
+      return;
+    }
+
+    const { error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: balanceApp.user_id,
+        application_id: balanceApp.id,
+        amount: balanceAction === 'topup' ? amount : -amount,
+        type: balanceAction === 'topup' ? 'credit' : 'debit',
+        description: `Admin ${balanceAction === 'topup' ? 'top-up' : 'deduction'}: $${amount.toLocaleString()}`,
+      });
+
+    if (txError) toast.error(txError.message);
+
+    toast.success(`$${amount.toLocaleString()} ${balanceAction === 'topup' ? 'added to' : 'deducted from'} ${balanceApp.full_name}'s balance`);
+    setShowBalanceDialog(false);
+    setBalanceAmount('');
+    setBalanceApp(null);
+    fetchApplications();
+    setProcessing(false);
+  };
+
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const formatCurrency = (n: number) => `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
@@ -327,6 +392,7 @@ export default function AdminDashboard() {
                   <TableHead>Applicant</TableHead>
                   <TableHead>Country</TableHead>
                   <TableHead>Amount</TableHead>
+                  <TableHead>Balance</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Next Withdrawal Error</TableHead>
@@ -335,16 +401,16 @@ export default function AdminDashboard() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
+                  Array.from({ length: 8 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
+                      {Array.from({ length: 8 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-24" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                       {search || statusFilter !== 'all' ? 'No applications match your filters' : 'No applications yet – test by submitting as a regular user'}
                     </TableCell>
                   </TableRow>
@@ -361,6 +427,19 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell className="text-muted-foreground">{profileCountries[app.user_id] || 'Unknown'}</TableCell>
                         <TableCell className="font-semibold">{formatCurrency(app.amount_requested)}</TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{formatCurrency(userBalances[app.user_id] ?? 0)}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs px-2"
+                              onClick={() => { setBalanceApp(app); setShowBalanceDialog(true); setBalanceAmount(''); setBalanceAction('topup'); }}
+                            >
+                              <DollarSign className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={statusColors[app.status]}>
                             {app.status}
@@ -588,6 +667,63 @@ export default function AdminDashboard() {
                 className="w-full bg-success text-success-foreground hover:bg-success/90"
               >
                 {processing ? 'Processing...' : `Credit $${creditAmount || '0.00'}`}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Balance Management Dialog */}
+      <Dialog open={showBalanceDialog} onOpenChange={setShowBalanceDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Manage Balance</DialogTitle>
+          </DialogHeader>
+          {balanceApp && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Adjust balance for <strong>{balanceApp.full_name}</strong> ({balanceApp.email})
+              </p>
+              <p className="text-sm">Current balance: <strong>{formatCurrency(userBalances[balanceApp.user_id] ?? 0)}</strong></p>
+              <div className="flex gap-2">
+                <Button
+                  variant={balanceAction === 'topup' ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setBalanceAction('topup')}
+                >
+                  <ArrowUpRight className="mr-1 h-3.5 w-3.5" /> Top Up
+                </Button>
+                <Button
+                  variant={balanceAction === 'deduct' ? 'destructive' : 'outline'}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setBalanceAction('deduct')}
+                >
+                  <ArrowDownToLine className="mr-1 h-3.5 w-3.5" /> Deduct
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label>Amount (USD)</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={balanceAmount}
+                    onChange={e => setBalanceAmount(e.target.value)}
+                    className="pl-10"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={handleBalanceAction}
+                disabled={processing || !balanceAmount}
+                className={`w-full ${balanceAction === 'deduct' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : 'bg-success text-success-foreground hover:bg-success/90'}`}
+              >
+                {processing ? 'Processing...' : `${balanceAction === 'topup' ? 'Add' : 'Deduct'} $${balanceAmount || '0.00'}`}
               </Button>
             </div>
           )}
