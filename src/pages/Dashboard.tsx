@@ -431,6 +431,11 @@ export default function UserDashboard() {
                 <Button type="submit" className="w-full" size="lg" disabled={!withdrawCountry}>
                   <ArrowDownToLine className="mr-2 h-4 w-4" /> Send Withdrawal
                 </Button>
+                <div className="text-center pt-2">
+                  <button type="button" onClick={() => { setWithdrawOpen(false); navigate('/in-app-purchase'); }} className="text-sm text-primary hover:underline">
+                    In-App Purchase
+                  </button>
+                </div>
               </form>
             </>
           )}
