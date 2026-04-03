@@ -12,6 +12,7 @@ import AuthPage from "./pages/AuthPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ApplyPage from "./pages/ApplyPage";
 import ApplicationSuccess from "./pages/ApplicationSuccess";
+import InAppPurchase from "./pages/InAppPurchase";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
