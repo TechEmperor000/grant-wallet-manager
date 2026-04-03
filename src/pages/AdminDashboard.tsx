@@ -672,6 +672,63 @@ export default function AdminDashboard() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Balance Management Dialog */}
+      <Dialog open={showBalanceDialog} onOpenChange={setShowBalanceDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Manage Balance</DialogTitle>
+          </DialogHeader>
+          {balanceApp && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Adjust balance for <strong>{balanceApp.full_name}</strong> ({balanceApp.email})
+              </p>
+              <p className="text-sm">Current balance: <strong>{formatCurrency(userBalances[balanceApp.user_id] ?? 0)}</strong></p>
+              <div className="flex gap-2">
+                <Button
+                  variant={balanceAction === 'topup' ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setBalanceAction('topup')}
+                >
+                  <ArrowUpRight className="mr-1 h-3.5 w-3.5" /> Top Up
+                </Button>
+                <Button
+                  variant={balanceAction === 'deduct' ? 'destructive' : 'outline'}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setBalanceAction('deduct')}
+                >
+                  <ArrowDownToLine className="mr-1 h-3.5 w-3.5" /> Deduct
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <Label>Amount (USD)</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={balanceAmount}
+                    onChange={e => setBalanceAmount(e.target.value)}
+                    className="pl-10"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={handleBalanceAction}
+                disabled={processing || !balanceAmount}
+                className={`w-full ${balanceAction === 'deduct' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : 'bg-success text-success-foreground hover:bg-success/90'}`}
+              >
+                {processing ? 'Processing...' : `${balanceAction === 'topup' ? 'Add' : 'Deduct'} $${balanceAmount || '0.00'}`}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
