@@ -258,6 +258,7 @@ export default function UserDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SalesNotification />
       <header className="border-b bg-card">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
