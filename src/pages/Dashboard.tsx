@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SalesNotification from '@/components/SalesNotification';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
