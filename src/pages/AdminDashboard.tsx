@@ -47,6 +47,13 @@ export default function AdminDashboard() {
   // Per-user error tracking
   const [userErrors, setUserErrors] = useState<Record<string, { code: string; custom?: string }>>({});
 
+  // Balance management
+  const [balanceApp, setBalanceApp] = useState<Application | null>(null);
+  const [showBalanceDialog, setShowBalanceDialog] = useState(false);
+  const [balanceAmount, setBalanceAmount] = useState('');
+  const [balanceAction, setBalanceAction] = useState<'topup' | 'deduct'>('topup');
+  const [userBalances, setUserBalances] = useState<Record<string, number>>({});
+
   const fetchApplications = async () => {
     setLoading(true);
     const { data, error } = await supabase
