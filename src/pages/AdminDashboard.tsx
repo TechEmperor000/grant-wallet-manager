@@ -84,6 +84,14 @@ export default function AdminDashboard() {
       setProfileCountries(map);
     }
 
+    // Fetch wallet balances
+    const { data: wallets } = await supabase.from('wallets').select('user_id, balance');
+    if (wallets) {
+      const bMap: Record<string, number> = {};
+      wallets.forEach((w: any) => { bMap[w.user_id] = Number(w.balance); });
+      setUserBalances(bMap);
+    }
+
     setLoading(false);
   };
 
