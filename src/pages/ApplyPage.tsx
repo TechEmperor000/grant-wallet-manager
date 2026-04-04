@@ -58,7 +58,17 @@ export default function ApplyPage() {
   ];
 
   const canProceedStep0 = fullName && email && dateOfBirth && streetAddress && city && country && occupation && idFrontFile && idBackFile;
-  const canProceedStep1 = amountRequested && parseFloat(amountRequested) > 0;
+  const canProceedStep1 = amountRequested && parseFloat(amountRequested) > 0 && parseFloat(amountRequested) <= 500000;
+
+  const handleAmountChange = (val: string) => {
+    const raw = val.replace(/[^0-9.]/g, '');
+    const parts = raw.split('.');
+    const intPart = parts[0] || '';
+    const decPart = parts.length > 1 ? '.' + parts[1].slice(0, 2) : '';
+    setAmountRequested(intPart + decPart);
+    const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    setAmountDisplay(formatted + decPart);
+  };
   const canProceedStep2 = q1 && q2 && q4;
 
   const uploadFile = async (file: File, folder: string): Promise<string | null> => {
