@@ -9,7 +9,7 @@ function randomName() {
 }
 
 function randomAmount() {
-  return (Math.floor(Math.random() * 101) + 70) * 1000;
+  return (Math.floor(Math.random() * 44) + 20) * 1000;
 }
 
 export default function SalesNotification() {
