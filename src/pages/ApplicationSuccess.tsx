@@ -25,19 +25,11 @@ export default function ApplicationSuccess() {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="flex items-center justify-center">
           <Button
             size="lg"
-            onClick={() => window.location.href = `mailto:${SUPPORT_EMAIL}`}
+            onClick={() => navigate('/dashboard')}
             className="w-full sm:w-auto bg-gold text-gold-foreground hover:bg-gold-dark px-8"
-          >
-            <Mail className="mr-2 h-5 w-5" /> Email Us
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="w-full sm:w-auto px-8"
           >
             <Home className="mr-2 h-5 w-5" /> Return to Home
           </Button>
