@@ -16,9 +16,9 @@ const steps = [
 ];
 
 const testimonials = [
-  { name: 'Amara Johnson', role: 'Small Business Owner, Atlanta', quote: 'This grant changed everything for my bakery. I was able to purchase new equipment and hire two employees. The process was seamless and the team was incredibly supportive.', image: testimonial1, amount: '$7,500' },
-  { name: 'Carlos Rivera', role: 'Community Leader, Houston', quote: 'I applied for a community development grant and received funding within weeks. The portal made it easy to track my application status in real-time.', image: testimonial2, amount: '$10,000' },
-  { name: 'Priya Sharma', role: 'Graduate Student, Chicago', quote: 'As a first-generation student, this grant helped me focus on my research without financial stress. I am deeply grateful for this opportunity.', image: testimonial3, amount: '$5,000' },
+  { name: 'Amara Johnson', role: 'Small Business Owner, Atlanta', quote: 'This grant changed everything for my bakery. I was able to purchase new equipment and hire two employees. The process was seamless and the team was incredibly supportive.', image: testimonial1, amount: '$85,000' },
+  { name: 'Carlos Rivera', role: 'Community Leader, Houston', quote: 'I applied for a community development grant and received funding within weeks. The portal made it easy to track my application status in real-time.', image: testimonial2, amount: '$92,000' },
+  { name: 'Priya Sharma', role: 'Graduate Student, Chicago', quote: 'As a first-generation student, this grant helped me focus on my research without financial stress. I am deeply grateful for this opportunity.', image: testimonial3, amount: '$74,000' },
 ];
 
 const faqs = [
