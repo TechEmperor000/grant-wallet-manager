@@ -23,8 +23,8 @@ const testimonials = [
 
 const faqs = [
   { q: 'Who is eligible to apply for grants?', a: 'We accept applications from individuals, small businesses, students, and community organizations across the United States. Eligibility criteria vary by grant type. Check specific requirements on the application form.' },
-  { q: 'How much funding can I receive?', a: 'Grant amounts range from $500 to $10,000 depending on the type of grant, your needs, and the purpose of funding. Our review team determines the final approved amount.' },
-  { q: 'How long does the approval process take?', a: 'Most applications are reviewed within 5–10 business days. You will receive email notifications at each stage, and you can track your status in real-time through your dashboard.' },
+  { q: 'How much funding can I receive?', a: 'Grant amounts range from $20,000 to $500,000 depending on the type of grant, your needs, and the purpose of funding. Our review team determines the final approved amount.' },
+  { q: 'How long does the approval process take?', a: 'Most applications are reviewed within 1 to 4 days. You will receive email notifications at each stage, and you can track your status in real-time through your dashboard.' },
   { q: 'Do I need to repay the grant?', a: 'No. Grants are non-repayable financial awards. Unlike loans, you are not required to pay back any amount received through our programs.' },
   { q: 'What documents do I need to submit?', a: 'Basic applications require only your personal information and a description of your funding purpose. Some grants may request additional documentation such as proof of enrollment, business registration, or a project proposal.' },
   { q: 'How will I receive the funds?', a: 'Approved funds are credited to your Grant Wallet on our platform. You can view your balance and transaction history in real-time on your dashboard.' },
