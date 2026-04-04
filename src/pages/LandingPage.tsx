@@ -76,7 +76,7 @@ export default function LandingPage() {
               Empowering Dreams Worldwide – Apply for Grants Today
             </h1>
             <p className="mt-6 text-lg md:text-xl text-[hsl(210,40%,80%)] leading-relaxed max-w-xl">
-              Access up to <strong className="text-gold">$10,000</strong> in non-repayable grant funding. We support individuals, students, small businesses, and community organizations across the nation.
+              Access up to <strong className="text-gold">$200,000</strong> in non-repayable grant funding. We support individuals, students, small businesses, and community organizations across the nation.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Button size="lg" onClick={handleCTA} className="bg-gold text-gold-foreground hover:bg-gold-dark text-base px-8 h-12">
