@@ -1,9 +1,7 @@
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Mail, Home } from 'lucide-react';
+import { CheckCircle, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SalesNotification from '@/components/SalesNotification';
-
-const SUPPORT_EMAIL = 'eligibleoffer@federalgovgrant.online';
 
 export default function ApplicationSuccess() {
   const navigate = useNavigate();
