@@ -323,8 +323,8 @@ export default function ApplyPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount Requested (USD) <span className="text-destructive">*</span></Label>
-                  <Input id="amount" type="number" min="1" max="10000" step="0.01" value={amountRequested} onChange={e => setAmountRequested(e.target.value)} required placeholder="e.g. 5000" />
-                  <p className="text-xs text-muted-foreground">Maximum $10,000</p>
+                  <Input id="amount" type="text" inputMode="decimal" value={amountDisplay} onChange={e => handleAmountChange(e.target.value)} required placeholder="e.g. 100,000" />
+                  <p className="text-xs text-muted-foreground">Maximum $500,000</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="purpose">Purpose / Description</Label>
