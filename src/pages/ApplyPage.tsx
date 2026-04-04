@@ -39,6 +39,7 @@ export default function ApplyPage() {
 
   // Step 2: Funding
   const [amountRequested, setAmountRequested] = useState('');
+  const [amountDisplay, setAmountDisplay] = useState('');
   const [purpose, setPurpose] = useState('');
 
   // Step 3: Questions
