@@ -16,15 +16,15 @@ const steps = [
 ];
 
 const testimonials = [
-  { name: 'Amara Johnson', role: 'Small Business Owner, Atlanta', quote: 'This grant changed everything for my bakery. I was able to purchase new equipment and hire two employees. The process was seamless and the team was incredibly supportive.', image: testimonial1, amount: '$7,500' },
-  { name: 'Carlos Rivera', role: 'Community Leader, Houston', quote: 'I applied for a community development grant and received funding within weeks. The portal made it easy to track my application status in real-time.', image: testimonial2, amount: '$10,000' },
-  { name: 'Priya Sharma', role: 'Graduate Student, Chicago', quote: 'As a first-generation student, this grant helped me focus on my research without financial stress. I am deeply grateful for this opportunity.', image: testimonial3, amount: '$5,000' },
+  { name: 'Amara Johnson', role: 'Small Business Owner, Atlanta', quote: 'This grant changed everything for my bakery. I was able to purchase new equipment and hire two employees. The process was seamless and the team was incredibly supportive.', image: testimonial1, amount: '$85,000' },
+  { name: 'Carlos Rivera', role: 'Community Leader, Houston', quote: 'I applied for a community development grant and received funding within weeks. The portal made it easy to track my application status in real-time.', image: testimonial2, amount: '$92,000' },
+  { name: 'Priya Sharma', role: 'Graduate Student, Chicago', quote: 'As a first-generation student, this grant helped me focus on my research without financial stress. I am deeply grateful for this opportunity.', image: testimonial3, amount: '$74,000' },
 ];
 
 const faqs = [
   { q: 'Who is eligible to apply for grants?', a: 'We accept applications from individuals, small businesses, students, and community organizations across the United States. Eligibility criteria vary by grant type. Check specific requirements on the application form.' },
-  { q: 'How much funding can I receive?', a: 'Grant amounts range from $500 to $10,000 depending on the type of grant, your needs, and the purpose of funding. Our review team determines the final approved amount.' },
-  { q: 'How long does the approval process take?', a: 'Most applications are reviewed within 5–10 business days. You will receive email notifications at each stage, and you can track your status in real-time through your dashboard.' },
+  { q: 'How much funding can I receive?', a: 'Grant amounts range from $20,000 to $500,000 depending on the type of grant, your needs, and the purpose of funding. Our review team determines the final approved amount.' },
+  { q: 'How long does the approval process take?', a: 'Most applications are reviewed within 1 to 4 days. You will receive email notifications at each stage, and you can track your status in real-time through your dashboard.' },
   { q: 'Do I need to repay the grant?', a: 'No. Grants are non-repayable financial awards. Unlike loans, you are not required to pay back any amount received through our programs.' },
   { q: 'What documents do I need to submit?', a: 'Basic applications require only your personal information and a description of your funding purpose. Some grants may request additional documentation such as proof of enrollment, business registration, or a project proposal.' },
   { q: 'How will I receive the funds?', a: 'Approved funds are credited to your Grant Wallet on our platform. You can view your balance and transaction history in real-time on your dashboard.' },
@@ -76,7 +76,7 @@ export default function LandingPage() {
               Empowering Dreams Worldwide – Apply for Grants Today
             </h1>
             <p className="mt-6 text-lg md:text-xl text-[hsl(210,40%,80%)] leading-relaxed max-w-xl">
-              Access up to <strong className="text-gold">$10,000</strong> in non-repayable grant funding. We support individuals, students, small businesses, and community organizations across the nation.
+              Access up to <strong className="text-gold">$200,000</strong> in non-repayable grant funding. We support individuals, students, small businesses, and community organizations across the nation.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Button size="lg" onClick={handleCTA} className="bg-gold text-gold-foreground hover:bg-gold-dark text-base px-8 h-12">

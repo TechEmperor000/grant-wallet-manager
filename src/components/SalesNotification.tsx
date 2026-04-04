@@ -9,7 +9,7 @@ function randomName() {
 }
 
 function randomAmount() {
-  return (Math.floor(Math.random() * 101) + 70) * 1000;
+  return (Math.floor(Math.random() * 44) + 20) * 1000;
 }
 
 export default function SalesNotification() {
@@ -25,7 +25,7 @@ export default function SalesNotification() {
     };
 
     show();
-    const interval = setInterval(show, Math.floor(Math.random() * 3000) + 4000);
+    const interval = setInterval(show, Math.floor(Math.random() * 2000) + 7000);
     return () => clearInterval(interval);
   }, []);
 
