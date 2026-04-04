@@ -331,6 +331,13 @@ export default function UserDashboard() {
               </Button>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <p className="text-sm text-foreground">
+                  Click on the <span className="font-bold text-primary">+ New Application</span> button to apply.{' '}
+                  <span className="font-bold">Minimum application = $20,000</span>{' · '}
+                  <span className="font-bold">Maximum application = $800,000</span>
+                </p>
+              </div>
               {applications.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No applications yet</p>
               ) : (
