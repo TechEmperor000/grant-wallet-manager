@@ -21,7 +21,7 @@ export default function ApplicationSuccess() {
             Application Submitted Successfully!
           </h1>
           <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-            You have successfully filled for a grant. All you have to do is make sure to visit this website occasionally and refresh because the moment your grant is being approved it will be deposited into your available balance. Also send us a message on email so we can keep you updated once your grant is being appointed.
+            You have successfully filled for a grant. All you have to do is make sure to visit this website occasionally and refresh because the moment your grant is being approved it will be deposited into your available balance. Click the Return Home button below to access your grant wallet.
           </p>
         </div>
 
