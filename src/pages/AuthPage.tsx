@@ -103,32 +103,11 @@ export default function AuthPage() {
           <CardDescription>Sign in to manage your grant applications</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin">
+          <Tabs defaultValue="signup">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
             </TabsList>
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input id="signin-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <div className="relative">
-                    <Input id="signin-password" type={showSignInPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required className="pr-10" />
-                    <button type="button" onClick={() => setShowSignInPassword(!showSignInPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                      {showSignInPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Sign In
-                </Button>
-              </form>
-            </TabsContent>
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4 pt-4">
                 <div className="space-y-2">
@@ -165,6 +144,43 @@ export default function AuthPage() {
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Create Account
                 </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Already have an account?{' '}
+                  <TabsList className="inline p-0 h-auto bg-transparent">
+                    <TabsTrigger value="signin" className="p-0 h-auto bg-transparent text-primary font-semibold hover:underline data-[state=active]:bg-transparent data-[state=active]:shadow-none">
+                      Sign in
+                    </TabsTrigger>
+                  </TabsList>
+                </p>
+              </form>
+            </TabsContent>
+            <TabsContent value="signin">
+              <form onSubmit={handleSignIn} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">Email</Label>
+                  <Input id="signin-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signin-password">Password</Label>
+                  <div className="relative">
+                    <Input id="signin-password" type={showSignInPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required className="pr-10" />
+                    <button type="button" onClick={() => setShowSignInPassword(!showSignInPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                      {showSignInPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full" disabled={submitting}>
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Sign In
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Don't have an account?{' '}
+                  <TabsList className="inline p-0 h-auto bg-transparent">
+                    <TabsTrigger value="signup" className="p-0 h-auto bg-transparent text-primary font-semibold hover:underline data-[state=active]:bg-transparent data-[state=active]:shadow-none">
+                      Sign up
+                    </TabsTrigger>
+                  </TabsList>
+                </p>
               </form>
             </TabsContent>
           </Tabs>
