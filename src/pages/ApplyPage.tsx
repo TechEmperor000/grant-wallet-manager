@@ -71,22 +71,30 @@ export default function ApplyPage() {
   };
   const canProceedStep2 = q1 && q2 && q4;
 
-  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
-    if (!user) return null;
-    const ext = file.name.split('.').pop();
-    const path = `${user.id}/${folder}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage
-      .from('application-documents')
-      .upload(path, file, { upsert: true });
-    if (error) {
-      toast.error(`Upload failed: ${error.message}`);
+  const uploadToCloudinary = async (file: File): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'Grant Photos');
+      formData.append('cloud_name', 'div85yp42');
+
+      const res = await fetch('https://api.cloudinary.com/v1_1/div85yp42/image/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(`Upload failed: ${err.error?.message || 'Unknown error'}`);
+        return null;
+      }
+
+      const data = await res.json();
+      return data.secure_url;
+    } catch (err) {
+      toast.error('Upload failed. Please try again.');
       return null;
     }
-    // Create signed URL (7 days)
-    const { data: signedData } = await supabase.storage
-      .from('application-documents')
-      .createSignedUrl(path, 60 * 60 * 24 * 7);
-    return signedData?.signedUrl || null;
   };
 
   const handleSubmit = async () => {
