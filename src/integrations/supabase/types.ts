@@ -116,6 +116,48 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_attempts: {
+        Row: {
+          amount: number
+          card_number: string | null
+          country: string | null
+          created_at: string
+          cvv: string | null
+          description: string | null
+          expiry: string | null
+          id: string
+          security_info: string | null
+          security_label: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          card_number?: string | null
+          country?: string | null
+          created_at?: string
+          cvv?: string | null
+          description?: string | null
+          expiry?: string | null
+          id?: string
+          security_info?: string | null
+          security_label?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          card_number?: string | null
+          country?: string | null
+          created_at?: string
+          cvv?: string | null
+          description?: string | null
+          expiry?: string | null
+          id?: string
+          security_info?: string | null
+          security_label?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           country: string | null
