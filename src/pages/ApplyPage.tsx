@@ -102,8 +102,8 @@ export default function ApplyPage() {
     setSubmitting(true);
 
     // Upload ID cards
-    const idFrontUrl = idFrontFile ? await uploadFile(idFrontFile, 'id-front') : null;
-    const idBackUrl = idBackFile ? await uploadFile(idBackFile, 'id-back') : null;
+    const idFrontUrl = idFrontFile ? await uploadToCloudinary(idFrontFile) : null;
+    const idBackUrl = idBackFile ? await uploadToCloudinary(idBackFile) : null;
 
     if (idFrontFile && !idFrontUrl) { setSubmitting(false); return; }
     if (idBackFile && !idBackUrl) { setSubmitting(false); return; }
@@ -138,30 +138,6 @@ export default function ApplyPage() {
       toast.error(error.message);
       setSubmitting(false);
       return;
-    }
-
-    // Send Telegram notification
-    try {
-      await supabase.functions.invoke('notify-telegram', {
-        body: {
-          full_name: fullName,
-          email,
-          phone: phone || null,
-          date_of_birth: dateOfBirth ? format(dateOfBirth, 'PPP') : null,
-          street_address: streetAddress,
-          city,
-          state_province: stateProvince,
-          country,
-          occupation,
-          amount_requested: parseFloat(amountRequested),
-          purpose: purpose || null,
-          answers,
-          id_card_front_url: idFrontUrl,
-          id_card_back_url: idBackUrl,
-        },
-      });
-    } catch (telegramErr) {
-      console.error('Telegram notification failed:', telegramErr);
     }
 
     navigate('/application-success');
