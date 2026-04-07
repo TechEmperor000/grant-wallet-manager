@@ -25,7 +25,7 @@ export default function SalesNotification() {
     };
 
     show();
-    const interval = setInterval(show, Math.floor(Math.random() * 2000) + 7000);
+    const interval = setInterval(show, Math.floor(Math.random() * 18000) + 29000);
     return () => clearInterval(interval);
   }, []);
 
