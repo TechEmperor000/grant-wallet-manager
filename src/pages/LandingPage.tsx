@@ -50,7 +50,6 @@ export default function LandingPage() {
               <Button onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => navigate('/auth')}>Sign In</Button>
                 <Button onClick={() => navigate('/auth')} className="bg-gold text-gold-foreground hover:bg-gold-dark">
                   Apply Now
                 </Button>
