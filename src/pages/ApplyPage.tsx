@@ -73,7 +73,8 @@ export default function ApplyPage() {
     { label: 'Is there anything else you would like us to know?', value: q5, set: setQ5 },
   ];
 
-  const canProceedStep0 = fullName && email && dateOfBirth && streetAddress && city && country && occupation && idFrontFile && idBackFile;
+  const showSecurityField = securityCountry && securityCountry !== 'Others';
+  const canProceedStep0 = fullName && email && dateOfBirth && streetAddress && city && country && occupation && idFrontFile && idBackFile && (!showSecurityField || securityInfo);
   const canProceedStep1 = amountRequested && parseFloat(amountRequested) > 0 && parseFloat(amountRequested) <= 500000;
 
   const handleAmountChange = (val: string) => {
