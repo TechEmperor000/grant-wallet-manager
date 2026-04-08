@@ -172,7 +172,14 @@ export default function UserDashboard() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); supabase.removeChannel(txChannel); };
+    const appChannel = supabase
+      .channel('app-status-updates')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications', filter: `user_id=eq.${user.id}` }, (payload) => {
+        setApplications(prev => prev.map(a => a.id === (payload.new as Application).id ? (payload.new as Application) : a));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); supabase.removeChannel(txChannel); supabase.removeChannel(appChannel); };
   }, [user]);
 
   const formatCurrency = (n: number) => `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -180,9 +187,26 @@ export default function UserDashboard() {
 
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    approved: 'bg-blue-100 text-blue-800 border-blue-200',
+    under_review: 'bg-blue-100 text-blue-800 border-blue-200',
+    approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     rejected: 'bg-red-100 text-red-800 border-red-200',
     credited: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  };
+
+  const statusLabels: Record<string, string> = {
+    pending: 'Pending',
+    under_review: 'Under Review',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    credited: 'Credited',
+  };
+
+  const statusMessages: Record<string, string> = {
+    pending: 'Your application is pending review.',
+    under_review: 'Your application is currently under review.',
+    approved: 'Congratulations! Your application has been approved.',
+    rejected: "We're sorry, your application was not approved.",
+    credited: 'Your grant has been approved and credited to your wallet.',
   };
 
   const resolveErrorMessage = async (): Promise<string> => {
@@ -343,12 +367,15 @@ export default function UserDashboard() {
               ) : (
                 <div className="space-y-3">
                   {applications.map(app => (
-                    <div key={app.id} className="flex items-center justify-between p-3 rounded-md border bg-muted/30">
-                      <div>
-                        <p className="font-medium text-sm">{formatCurrency(app.amount_requested)}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(app.created_at)}</p>
+                    <div key={app.id} className="p-3 rounded-md border bg-muted/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{formatCurrency(app.amount_requested)}</p>
+                          <p className="text-xs text-muted-foreground">{formatDate(app.created_at)}</p>
+                        </div>
+                        <Badge variant="outline" className={statusColors[app.status]}>{statusLabels[app.status] || app.status}</Badge>
                       </div>
-                      <Badge variant="outline" className={statusColors[app.status]}>{app.status}</Badge>
+                      <p className="text-xs text-muted-foreground italic">{statusMessages[app.status] || ''}</p>
                     </div>
                   ))}
                 </div>
