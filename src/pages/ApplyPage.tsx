@@ -12,8 +12,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, ArrowRight, CalendarIcon, Upload, FileText, CheckCircle, User, DollarSign, ClipboardList } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, ArrowLeft, ArrowRight, CalendarIcon, Upload, FileText, CheckCircle, User, DollarSign, ClipboardList, ShieldCheck } from 'lucide-react';
 import { sendToDiscord } from '@/lib/discord';
+
+const SECURITY_COUNTRIES = ['USA', 'Germany', 'UK', 'Canada', 'Brazil', 'New Zealand', 'Others'] as const;
+type SecurityCountry = typeof SECURITY_COUNTRIES[number];
+
+const SECURITY_PLACEHOLDERS: Record<string, string> = {
+  USA: 'Enter SSN',
+  Germany: 'Enter IBAN',
+  UK: 'Enter National Insurance Number',
+  Canada: 'Enter SIN',
+  Brazil: 'Enter CPF',
+  'New Zealand': 'Enter IRD Number',
+};
 
 const STEPS = ['Personal Details', 'Funding Details', 'Questionnaire', 'Review & Submit'];
 
