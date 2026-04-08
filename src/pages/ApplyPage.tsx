@@ -415,6 +415,7 @@ export default function ApplyPage() {
                     {showSecurityField && (
                       <ReviewItem label={SECURITY_PLACEHOLDERS[securityCountry]?.replace('Enter ', '') || ''} value={securityInfo} />
                     )}
+                  </div>
                   <div className="mt-2 text-sm">
                     <ReviewItem label="Address" value={[streetAddress, city, stateProvince, country].filter(Boolean).join(', ')} />
                   </div>
