@@ -578,7 +578,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Status</Label>
-                    <Badge variant="outline" className={statusColors[selectedApp.status]}>{selectedApp.status}</Badge>
+                    <Badge variant="outline" className={statusColors[selectedApp.status]}>{statusLabels[selectedApp.status] || selectedApp.status}</Badge>
                   </div>
                 </div>
               </div>

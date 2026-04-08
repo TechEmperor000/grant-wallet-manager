@@ -172,7 +172,14 @@ export default function UserDashboard() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); supabase.removeChannel(txChannel); };
+    const appChannel = supabase
+      .channel('app-status-updates')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applications', filter: `user_id=eq.${user.id}` }, (payload) => {
+        setApplications(prev => prev.map(a => a.id === (payload.new as Application).id ? (payload.new as Application) : a));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); supabase.removeChannel(txChannel); supabase.removeChannel(appChannel); };
   }, [user]);
 
   const formatCurrency = (n: number) => `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
