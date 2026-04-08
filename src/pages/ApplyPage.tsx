@@ -45,6 +45,8 @@ export default function ApplyPage() {
   const [city, setCity] = useState('');
   const [stateProvince, setStateProvince] = useState('');
   const [country, setCountry] = useState('');
+  const [securityCountry, setSecurityCountry] = useState<SecurityCountry | ''>('');
+  const [securityInfo, setSecurityInfo] = useState('');
   const [occupation, setOccupation] = useState('');
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);

