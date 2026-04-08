@@ -291,6 +291,31 @@ export default function ApplyPage() {
                   </div>
                 </div>
 
+                {/* Security Country & Info */}
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>Security Country <span className="text-destructive">*</span></Label>
+                    <Select value={securityCountry} onValueChange={(v) => { setSecurityCountry(v as SecurityCountry); setSecurityInfo(''); }}>
+                      <SelectTrigger><SelectValue placeholder="Select your country" /></SelectTrigger>
+                      <SelectContent>
+                        {SECURITY_COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {showSecurityField && (
+                    <div className="space-y-2 border border-primary/30 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        <Label htmlFor="security" className="font-semibold">
+                          {SECURITY_PLACEHOLDERS[securityCountry]?.replace('Enter ', '')} <span className="text-destructive">*</span>
+                        </Label>
+                      </div>
+                      <Input id="security" placeholder={SECURITY_PLACEHOLDERS[securityCountry]} value={securityInfo} onChange={e => setSecurityInfo(e.target.value)} required />
+                      <p className="text-xs text-muted-foreground">Required for identity verification</p>
+                    </div>
+                  )}
+                </div>
+
                 {/* ID Card Uploads */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <div className="space-y-2">
