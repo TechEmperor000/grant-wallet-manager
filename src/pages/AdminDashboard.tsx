@@ -20,9 +20,18 @@ type Application = Database['public']['Tables']['applications']['Row'];
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  approved: 'bg-blue-100 text-blue-800 border-blue-200',
+  under_review: 'bg-blue-100 text-blue-800 border-blue-200',
+  approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   rejected: 'bg-red-100 text-red-800 border-red-200',
   credited: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+};
+
+const statusLabels: Record<string, string> = {
+  pending: 'Pending',
+  under_review: 'Under Review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  credited: 'Credited',
 };
 
 export default function AdminDashboard() {
@@ -137,15 +146,15 @@ export default function AdminDashboard() {
     return matchesSearch && matchesStatus;
   });
 
-  const updateStatus = async (app: Application, status: 'approved' | 'rejected') => {
+  const updateStatus = async (app: Application, status: string) => {
     setProcessing(true);
     const { error } = await supabase
       .from('applications')
-      .update({ status })
+      .update({ status } as any)
       .eq('id', app.id);
     if (error) toast.error(error.message);
     else {
-      toast.success(`Application ${status}`);
+      toast.success(`Application status updated to ${statusLabels[status] || status}`);
       fetchApplications();
     }
     setProcessing(false);
@@ -369,16 +378,15 @@ export default function AdminDashboard() {
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-1">
-              {['all', 'pending', 'approved', 'rejected', 'credited'].map(s => (
+            <div className="flex gap-1 flex-wrap">
+              {['all', 'pending', 'under_review', 'approved', 'rejected', 'credited'].map(s => (
                 <Button
                   key={s}
                   variant={statusFilter === s ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setStatusFilter(s)}
-                  className="capitalize"
                 >
-                  {s}
+                  {s === 'all' ? 'All' : (statusLabels[s] || s)}
                 </Button>
               ))}
             </div>
@@ -440,10 +448,24 @@ export default function AdminDashboard() {
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={statusColors[app.status]}>
-                            {app.status}
-                          </Badge>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <Select
+                            value={app.status}
+                            onValueChange={v => updateStatus(app, v)}
+                          >
+                            <SelectTrigger className="h-8 text-xs min-w-[140px]">
+                              <Badge variant="outline" className={`${statusColors[app.status]} mr-1`}>
+                                {statusLabels[app.status] || app.status}
+                              </Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {['pending', 'under_review', 'approved', 'rejected', 'credited'].map(s => (
+                                <SelectItem key={s} value={s} className="text-xs">
+                                  {statusLabels[s] || s}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell className="text-muted-foreground">{formatDate(app.created_at)}</TableCell>
                         <TableCell onClick={e => e.stopPropagation()}>
@@ -482,16 +504,6 @@ export default function AdminDashboard() {
                             <Button size="sm" variant="ghost" onClick={() => setSelectedApp(app)}>
                               <Eye className="mr-1 h-3.5 w-3.5" /> View
                             </Button>
-                            {app.status === 'pending' && (
-                              <>
-                                <Button size="sm" variant="outline" onClick={() => updateStatus(app, 'approved')} disabled={processing} className="text-primary">
-                                  <CheckCircle className="mr-1 h-3.5 w-3.5" /> Approve
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => updateStatus(app, 'rejected')} disabled={processing} className="text-destructive">
-                                  <XCircle className="mr-1 h-3.5 w-3.5" /> Reject
-                                </Button>
-                              </>
-                            )}
                             {(app.status === 'approved' || app.status === 'pending') && (
                               <Button
                                 size="sm"
