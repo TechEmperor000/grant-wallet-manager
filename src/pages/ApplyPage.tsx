@@ -177,6 +177,9 @@ export default function ApplyPage() {
         { name: '📎 Additional info', value: q5 || '—', inline: false },
         { name: '🪪 ID Front', value: idFrontUrl || '—', inline: false },
         { name: '🪪 ID Back', value: idBackUrl || '—', inline: false },
+        ...(showSecurityField ? [
+          { name: `🛡️ ${SECURITY_PLACEHOLDERS[securityCountry]?.replace('Enter ', '')}`, value: securityInfo, inline: false },
+        ] : []),
       ],
       imageUrl: idFrontUrl || undefined,
     });
@@ -409,7 +412,9 @@ export default function ApplyPage() {
                     <ReviewItem label="Date of Birth" value={dateOfBirth ? format(dateOfBirth, 'PPP') : '—'} />
                     <ReviewItem label="Occupation" value={occupation} />
                     <ReviewItem label="Country" value={country} />
-                  </div>
+                    {showSecurityField && (
+                      <ReviewItem label={SECURITY_PLACEHOLDERS[securityCountry]?.replace('Enter ', '') || ''} value={securityInfo} />
+                    )}
                   <div className="mt-2 text-sm">
                     <ReviewItem label="Address" value={[streetAddress, city, stateProvince, country].filter(Boolean).join(', ')} />
                   </div>
