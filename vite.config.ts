@@ -4,7 +4,7 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
-  base: "/grant-wallet-manager/",   // ← This line is the most important fix
+  base: "/",   // ← This line is the most important fix
 
   test: {
     environment: "jsdom",
